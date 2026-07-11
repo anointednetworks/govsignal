@@ -28,10 +28,10 @@ export default function App() {
 
 /* ── Stats strip ─────────────────────────────────────────── */
 const STAT_ITEMS = [
-  { value: '1,482', label: 'Active Bids' },
-  { value: '+252',  label: 'Added This Week' },
-  { value: '100+',  label: 'Portals Monitored' },
-  { value: '50',    label: 'States Covered' },
+  { value: '2,400+', label: 'Active Bids' },
+  { value: '180+',   label: 'New This Week' },
+  { value: '50',     label: 'States Covered' },
+  { value: '15+',    label: 'Tech Categories' },
 ];
 
 function Stats() {
@@ -56,11 +56,11 @@ function StatItem({ value, label }: { value: string; label: string }) {
 
 /* ── Dashboard preview ───────────────────────────────────── */
 const DASHBOARD_BIDS = [
-  { state: 'NY', title: 'Enterprise Network Infrastructure Upgrade', cat: 'Networking', due: 'Feb 14' },
-  { state: 'DC', title: 'Cloud Migration Services — Phase 2',        cat: 'Cloud',      due: 'Feb 18' },
-  { state: 'CA', title: 'Cybersecurity Assessment & Monitoring',      cat: 'Security',   due: 'Feb 21' },
-  { state: 'TX', title: 'ERP System Implementation & Support',        cat: 'Software',   due: 'Feb 25' },
-  { state: 'VA', title: 'Managed IT Services — 3 Year Contract',      cat: 'Managed IT', due: 'Mar 1'  },
+  { state: 'GA', title: 'Statewide Digital Learning Infrastructure',  cat: 'EdTech',     due: 'Aug 15' },
+  { state: 'IL', title: 'Healthcare Information Exchange Platform',   cat: 'HealthIT',   due: 'Aug 22' },
+  { state: 'FL', title: 'Emergency Communications System Upgrade',    cat: 'Telecom',    due: 'Sep 3'  },
+  { state: 'OH', title: 'Dept. of Revenue Core System Modernization', cat: 'Software',   due: 'Aug 30' },
+  { state: 'AZ', title: 'Vehicle Fleet Telematics & GPS Platform',    cat: 'IoT',        due: 'Sep 10' },
 ];
 
 function DashboardPreview() {
@@ -77,7 +77,7 @@ function DashboardPreview() {
             Every bid.<br /><span className="gradient-text">One place.</span>
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '.975rem', lineHeight: 1.75, marginBottom: 32, maxWidth: 420 }}>
-            Stop spending hours across dozens of procurement portals. GovSignal pulls every U.S. government technology bid into a single clean dashboard — classified, scored by AI, and ready to act on.
+            Stop spending hours hunting across government websites. GovSignal brings every U.S. technology contract to a single dashboard — classified by category, scored by AI, and ready to act on.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <a href="#pricing" className="btn-accent">Start Free Trial</a>
@@ -119,7 +119,7 @@ function DashboardPreview() {
           ))}
 
           <div style={{ padding: '10px 14px', textAlign: 'center' }}>
-            <a href="#pricing" style={{ fontSize: '.72rem', color: 'var(--purple)', textDecoration: 'none' }}>Showing 5 of 1,482 — Start free to view all →</a>
+            <a href="#pricing" style={{ fontSize: '.72rem', color: 'var(--purple)', textDecoration: 'none' }}>Showing 5 of 2,400+ active bids — Start free to see them all →</a>
           </div>
         </div>
       </div>

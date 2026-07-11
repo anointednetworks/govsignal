@@ -1,12 +1,12 @@
 const BIDS = [
-  'Pacific Data Recompete · Due Jul 22',
-  'UI DMS Modernization Assessment · Due Aug 14',
-  'Statewide Video Sharing Solution · Due Jul 20',
-  'Aeronautics Program Management System · Due Aug 10',
-  'Cybersecurity Tabletop Exercises · Due Jul 30',
-  'Enterprise Service Management Licenses · Due Jul 15',
-  'HubSpot CRM Implementation · Due Jul 14',
-  'Cloud Migration Services Phase 2 · Due Aug 1',
+  'Statewide Identity & Access Management Platform · Due Aug 5',
+  'School District ERP Replacement · Due Aug 19',
+  'Public Works Asset Management System · Due Jul 28',
+  'Broadband Infrastructure Planning Tool · Due Aug 12',
+  'Department of Revenue Tax Portal Upgrade · Due Sep 2',
+  'Municipal Court Case Management Software · Due Aug 8',
+  'Transit Authority Real-Time Passenger App · Due Jul 31',
+  'State Health Exchange Data Warehouse · Due Sep 15',
 ];
 
 export default function Ticker() {

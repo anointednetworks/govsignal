@@ -23,7 +23,7 @@ export default function Hero() {
         </h1>
 
         <p className="ha3" style={{ fontSize: 'clamp(16px, 2.2vw, 19px)', color: 'var(--muted)', lineHeight: 1.7, maxWidth: 580, margin: '0 auto 40px', fontWeight: 400 }}>
-          GovSignal monitors 100+ federal, state, and municipal procurement portals and delivers every technology opportunity to your inbox — classified, summarized, and ready to bid.
+          GovSignal tracks government procurement activity across the entire United States and delivers every technology opportunity to your inbox — classified, AI-scored, and ready to bid.
         </p>
 
         <div className="ha4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
@@ -40,7 +40,7 @@ export default function Hero() {
           <Dot />
           <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>2,400+ companies</span>
           <Dot />
-          <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>SAM.gov integrated</span>
+          <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Nationwide coverage</span>
           <Dot />
           <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Free 7-day trial</span>
         </div>

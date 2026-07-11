@@ -11,11 +11,11 @@ const FEATURES = [
           <span className="live-dot" />
           Your GovSignal Brief · 3 new matches
         </div>
-        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>Enterprise Cloud Migration Services</div>
-        <div style={{ color: 'var(--dim)', marginBottom: 10 }}>State of California · Closes Feb 14</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>Statewide Digital Transformation Program</div>
+        <div style={{ color: 'var(--dim)', marginBottom: 10 }}>State of Georgia · Closes Aug 19</div>
         <div style={{ height: 1, background: 'var(--border)', marginBottom: 10 }} />
-        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>Cybersecurity Assessment & Pen Testing</div>
-        <div style={{ color: 'var(--dim)' }}>Federal Agency · Closes Feb 21</div>
+        <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>IT Managed Services — 5 Year IDIQ</div>
+        <div style={{ color: 'var(--dim)' }}>Dept. of Health & Human Services · Closes Sep 4</div>
       </div>
     ),
   },
@@ -26,7 +26,7 @@ const FEATURES = [
     desc: 'We analyze your company profile and rank every active bid 0–100% by fit — with a plain-English reason. Skip the noise, see only what matches your capabilities.',
     preview: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {[['Cyber Warfare Engineering & Security', '100%', true], ['Intrusion Detection System (IDS)', '90%', true], ['Generic Hardware Procurement', '10%', false]].map(([title, pct, good]) => (
+        {[['Digital Transformation Consulting', '94%', true], ['Network Infrastructure Overhaul', '88%', true], ['Office Furniture Replacement', '6%', false]].map(([title, pct, good]) => (
           <div key={String(title)} style={{ background: 'rgba(177,59,255,.05)', border: `1px solid ${good ? 'rgba(177,59,255,.14)' : 'rgba(177,59,255,.06)'}`, borderRadius: 10, padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '.8rem', color: good ? 'var(--text)' : 'var(--dim)' }}>{String(title)}</span>
             <span className={good ? 'badge badge-live' : 'badge'} style={good ? {} : { background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: '#f87171' }}>{String(pct)}</span>
@@ -43,9 +43,9 @@ const FEATURES = [
     preview: (
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {[
-          { label: 'Watching', cards: ['Statewide Network Modernization'] },
-          { label: 'Pursuing', cards: ['Cyber Ops Support', 'Cloud Hosting 3yr'] },
-          { label: 'Won 🎉', cards: ['Public Safety Records'], win: true },
+          { label: 'Watching', cards: ['Transit Authority Digital Upgrade'] },
+          { label: 'Pursuing', cards: ['DOT Data Analytics Platform', 'Benefits Portal Redesign'] },
+          { label: 'Won 🎉', cards: ['IT Help Desk Contract'], win: true },
         ].map(col => (
           <div key={col.label} style={{ background: 'rgba(20,14,44,.7)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, minWidth: 130, flex: 1 }}>
             <div style={{ fontSize: '.6rem', fontWeight: 600, letterSpacing: '.15em', textTransform: 'uppercase', color: col.win ? 'var(--green)' : 'var(--dim)', marginBottom: 8 }}>{col.label}</div>
@@ -68,7 +68,7 @@ const FEATURES = [
           Search technology bids...
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {['California ×', 'Software ×', '$50K+ ×', 'Closing soon ×'].map(tag => (
+          {['Georgia ×', 'Cloud Services ×', '$100K+ ×', 'Open ×'].map(tag => (
             <span key={tag} style={{ background: 'rgba(177,59,255,.14)', border: '1px solid rgba(177,59,255,.3)', color: 'rgba(177,59,255,.9)', padding: '4px 12px', borderRadius: 100, fontSize: '.72rem', fontWeight: 500 }}>{tag}</span>
           ))}
         </div>
@@ -82,9 +82,9 @@ const FEATURES = [
     preview: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {[
-          { title: 'Cloud Hosting & Managed Services', badge: <span className="badge badge-soon">Pursuing</span> },
-          { title: 'ERP System Modernization — DoD', badge: <span className="badge badge-new">Submitted</span> },
-          { title: 'Public Safety Records System', badge: <span className="badge badge-live">Won 🎉</span> },
+          { title: 'Fleet Management Software Platform', badge: <span className="badge badge-soon">Pursuing</span> },
+          { title: 'Benefits Administration Portal', badge: <span className="badge badge-new">Submitted</span> },
+          { title: 'IT Help Desk Services — 3yr', badge: <span className="badge badge-live">Won 🎉</span> },
         ].map(row => (
           <div key={row.title} style={{ background: 'rgba(177,59,255,.05)', border: '1px solid rgba(177,59,255,.14)', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '.8rem', color: 'var(--text)' }}>{row.title}</span>
@@ -97,10 +97,10 @@ const FEATURES = [
   {
     num: '06',
     title: 'Coast-to-Coast Coverage',
-    desc: 'We monitor procurement portals across all 50 states and federal agencies. No technology bid slips through — from the smallest county to the DoD.',
+    desc: 'GovSignal coverage spans federal agencies, all 50 states, and hundreds of municipal and county governments — so no technology contract slips through.',
     preview: (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {['SAM.gov', 'TX SmartBuy', 'Colorado PG', 'NC eVP', 'IL BidBuy', 'LA County', 'NYC eVP', '+100 more'].map(s => (
+        {['Federal Agencies', 'Defense Contracts', 'All 50 States', 'Major Metro Areas', 'County Governments', 'Education Sector', 'Public Utilities', 'Hundreds more'].map(s => (
           <span key={s} className="source-chip">{s}</span>
         ))}
       </div>
