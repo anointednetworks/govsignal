@@ -27,7 +27,7 @@ export default function Hero() {
         </p>
 
         <div className="ha4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-          <a href="#pricing" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 30px' }}>
+          <a href="/demo" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 30px' }}>
             Start Free — 7 Days
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
           </a>

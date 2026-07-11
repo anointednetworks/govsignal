@@ -24,7 +24,7 @@ export default function Nav() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <a href="#" style={{ color: 'var(--muted)', fontSize: '.875rem', fontWeight: 500, textDecoration: 'none' }}>Log in</a>
-          <a href="#pricing" className="btn-accent" style={{ fontSize: '.85rem', padding: '9px 18px' }}>Try Free →</a>
+          <a href="/demo" className="btn-accent" style={{ fontSize: '.85rem', padding: '9px 18px' }}>Try Free →</a>
         </div>
       </div>
     </nav>

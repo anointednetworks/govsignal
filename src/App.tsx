@@ -80,7 +80,7 @@ function DashboardPreview() {
             Stop spending hours hunting across government websites. GovSignal brings every U.S. technology contract to a single dashboard — classified by category, scored by AI, and ready to act on.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <a href="#pricing" className="btn-accent">Start Free Trial</a>
+            <a href="/demo" className="btn-accent">Start Free Trial</a>
             <a href="#" className="btn-primary">Preview Dashboard</a>
           </div>
         </div>
@@ -143,7 +143,7 @@ function CTA() {
             Join IT companies across the U.S. who start every morning with GovSignal — the complete picture of what's out there, matched to your business.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="#pricing" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 32px' }}>Start Free — 7-Day Trial →</a>
+            <a href="/demo" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 32px' }}>Start Free — 7-Day Trial →</a>
             <a href="#features" className="btn-primary" style={{ fontSize: '1rem', padding: '14px 32px' }}>See how it works</a>
           </div>
         </div>

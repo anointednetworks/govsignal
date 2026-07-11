@@ -4,7 +4,7 @@ import { useReveal } from '../hooks/useReveal';
 const FAQS = [
   {
     q: 'How does GovSignal get its bid data?',
-    a: 'We run automated spiders against 100+ federal, state, and municipal procurement portals every day — including SAM.gov, all 50 state eProcurement systems, and major city and county portals. We normalize the data, filter for technology-category bids, and load everything into your dashboard before 6 AM each morning.',
+    a: 'GovSignal uses a proprietary intelligence platform to continuously monitor government procurement activity across the entire United States — federal, state, and local. We normalize, classify, and score every opportunity before it reaches your dashboard, typically by 6 AM each morning.',
   },
   {
     q: 'What types of bids are included?',
