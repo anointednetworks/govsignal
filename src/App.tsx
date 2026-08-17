@@ -119,7 +119,7 @@ function DashboardPreview() {
           ))}
 
           <div style={{ padding: '10px 14px', textAlign: 'center' }}>
-            <a href="#pricing" style={{ fontSize: '.72rem', color: 'var(--purple)', textDecoration: 'none' }}>Showing 5 of 2,400+ active bids — Start free to see them all →</a>
+            <a href="#pricing" style={{ fontSize: '.72rem', color: 'var(--purple)', textDecoration: 'none' }}>Showing 5 of 1,000+ active bids — Start free to see them all →</a>
           </div>
         </div>
       </div>

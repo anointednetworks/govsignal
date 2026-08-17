@@ -38,7 +38,7 @@ export default function Hero() {
           <span style={{ color: 'var(--gold)', fontSize: 15, letterSpacing: 1 }}>★★★★★</span>
           <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Rated 4.8/5</span>
           <Dot />
-          <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>2,400+ companies</span>
+          <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>1,000+ active bids</span>
           <Dot />
           <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Nationwide coverage</span>
           <Dot />

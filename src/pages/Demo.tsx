@@ -67,7 +67,7 @@ export default function Demo() {
           }}>Preview</span>
         </Link>
         <Link to="/" style={{ color: 'var(--dim)', fontSize: '.82rem', textDecoration: 'none' }}>← Back to site</Link>
-        <a href="/signup" className="btn-accent" style={{ fontSize: '.82rem', padding: '7px 16px' }}>
+        <a href="/#pricing" className="btn-accent" style={{ fontSize: '.82rem', padding: '7px 16px' }}>
           Start Free — No CC Required
         </a>
       </nav>
@@ -82,11 +82,11 @@ export default function Demo() {
           <LockIcon size={13} />
           <strong style={{ color: 'var(--text)' }}>Preview Mode</strong> — Agency names, contract values, and bid details are locked.
         </span>
-        <a href="/signup" style={{
+        <a href="/#pricing" style={{
           fontSize: '.78rem', fontWeight: 600, color: 'var(--purple)',
           textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
         }}>
-          Sign up free to unlock all {BIDS.length * 200}+ bids →
+          Sign up free to unlock all 1,000+ active bids →
         </a>
       </div>
 
@@ -151,7 +151,7 @@ export default function Demo() {
                 }}>
                   <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.3"/><path d="M10 10L13 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                   <span style={{ color: 'var(--muted)' }}>Filters locked — </span>
-                  <a href="/signup" style={{ color: 'var(--purple)', textDecoration: 'none', fontWeight: 600 }}>Sign up to filter</a>
+                  <a href="/#pricing" style={{ color: 'var(--purple)', textDecoration: 'none', fontWeight: 600 }}>Sign up to filter</a>
                 </div>
               </div>
             </div>
@@ -186,7 +186,7 @@ export default function Demo() {
           <span style={{ fontSize: '.88rem', color: 'var(--muted)' }}>You're viewing a sample of GovSignal. </span>
           <span style={{ fontSize: '.88rem', color: 'var(--text)', fontWeight: 600 }}>Unlock 1,000+ live bids — no credit card required.</span>
         </div>
-        <a href="/signup" className="btn-accent" style={{ fontSize: '.9rem', padding: '10px 24px', flexShrink: 0 }}>
+        <a href="/#pricing" className="btn-accent" style={{ fontSize: '.9rem', padding: '10px 24px', flexShrink: 0 }}>
           Start Free — 7 Days →
         </a>
       </div>
@@ -284,7 +284,7 @@ function BidCard({ bid, hovered, onHover, onLeave }: {
             <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--text)', marginBottom: 4 }}>Unlock Full Details</div>
             <div style={{ fontSize: '.78rem', color: 'var(--muted)' }}>Agency · Value · Documents · AI Summary</div>
           </div>
-          <a href="/signup" className="btn-accent" style={{ fontSize: '.82rem', padding: '9px 20px' }}>
+          <a href="/#pricing" className="btn-accent" style={{ fontSize: '.82rem', padding: '9px 20px' }}>
             Sign Up Free →
           </a>
         </div>
@@ -360,7 +360,7 @@ function ForYouLocked({ onBrowseAll }: { onBrowseAll: () => void }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <a href="/signup" className="btn-accent" style={{ fontSize: '.9rem', padding: '11px 24px' }}>
+        <a href="/#pricing" className="btn-accent" style={{ fontSize: '.9rem', padding: '11px 24px' }}>
           Set Up My Radar Profile →
         </a>
         <button onClick={onBrowseAll} className="btn-primary" style={{ fontSize: '.9rem', padding: '11px 20px', border: 'none', cursor: 'pointer' }}>
