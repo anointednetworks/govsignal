@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useBids, type Bid } from '../hooks/useBids';
 
 /* ── Sample bid data ─────────────────────────────────────── */
 const BIDS = [
@@ -36,10 +37,39 @@ const RADAR_BIDS = [
   { title: 'Benefits Case Management Platform',          score: 63 },
 ];
 
+/* ── Normalise a live Bid into the shape BidCard expects ─── */
+function normaliseLiveBid(b: Bid) {
+  const deadline = b.response_deadline ? new Date(b.response_deadline) : null;
+  const daysLeft = deadline ? Math.ceil((deadline.getTime() - Date.now()) / 86_400_000) : null;
+  const due = deadline
+    ? deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : 'TBD';
+  return {
+    id: b.id,
+    state: b.state_code ?? 'US',
+    agency: b.agency ?? 'Federal Agency',
+    title: b.title,
+    cat: b.category ?? 'Software',
+    due,
+    daysLeft: daysLeft ?? 0,
+    value: null as null,        // value not in SAM data
+    samUrl: b.sam_url,
+  };
+}
+
 /* ── Component ───────────────────────────────────────────── */
 export default function Demo() {
   const [tab, setTab] = useState<'all' | 'foryou'>('all');
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | number | null>(null);
+
+  // Attempt to load live bids; falls back to static sample when env vars absent
+  const { bids: liveBids, loading, total } = useBids({ limit: 24 });
+  const hasLive = liveBids.length > 0;
+
+  const displayBids = useMemo(() => {
+    if (hasLive) return liveBids.map(normaliseLiveBid);
+    return BIDS.map(b => ({ ...b, value: b.value as string | null, samUrl: null as null }));
+  }, [hasLive, liveBids]);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}>
@@ -138,8 +168,14 @@ export default function Demo() {
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>Today's Opportunities</span>
-                <span style={{ marginLeft: 10, fontSize: '.78rem', color: 'var(--dim)' }}>Showing {BIDS.length} of 1,000+ active bids</span>
+                <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}>
+                  {hasLive ? 'Live Opportunities' : "Today's Opportunities"}
+                </span>
+                <span style={{ marginLeft: 10, fontSize: '.78rem', color: 'var(--dim)' }}>
+                  {loading
+                    ? 'Loading…'
+                    : `Showing ${displayBids.length} of ${total ? total.toLocaleString() : '1,000'}+ active bids`}
+                </span>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span className="badge badge-new" style={{ fontSize: '.65rem' }}>All States</span>
@@ -157,7 +193,7 @@ export default function Demo() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-              {BIDS.map(bid => (
+              {displayBids.map(bid => (
                 <BidCard
                   key={bid.id}
                   bid={bid}
@@ -194,9 +230,11 @@ export default function Demo() {
   );
 }
 
+type DisplayBid = { id: string | number; state: string; agency: string; title: string; cat: string; due: string; daysLeft: number; value: string | null; samUrl: string | null };
+
 /* ── Bid Card ─────────────────────────────────────────────── */
 function BidCard({ bid, hovered, onHover, onLeave }: {
-  bid: typeof BIDS[0];
+  bid: DisplayBid;
   hovered: boolean;
   onHover: () => void;
   onLeave: () => void;
