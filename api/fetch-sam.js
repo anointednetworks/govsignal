@@ -7,14 +7,14 @@ const NAICS_CODES = [
   '541512', // Computer Systems Design Services
   '541513', // Computer Facilities Management Services
   '541519', // Other Computer Related Services
-  '541715', // R&D in Physical, Engineering, and Life Sciences
-  '518210', // Computing Infrastructure Providers
+  '541715', // R&D in Physical, Engineering, and Life Sciences (defense/software R&D)
+  '518210', // Computing Infrastructure Providers / Data Processing & Hosting
   '519130', // Internet Publishing and Broadcasting
-  '541330', // Engineering Services
-  '541690', // Other Scientific and Technical Consulting
+  '519190', // All Other Information Services (GIS, database services, digital records)
   '611420', // Computer Training
   '334111', // Electronic Computer Manufacturing
   '517919', // Other Telecommunications
+  '517312', // Wireless Telecommunications Carriers (network infrastructure)
 ];
 
 const CATEGORY_MAP = [
