@@ -71,6 +71,16 @@ export default function Demo() {
     return BIDS.map(b => ({ ...b, value: b.value as string | null, samUrl: null as null }));
   }, [hasLive, liveBids]);
 
+  // Compute live stats from what we fetched (approximations for the strip)
+  const closingThisWeek = useMemo(() => {
+    if (!hasLive) return 48;
+    const cutoff = Date.now() + 7 * 86_400_000;
+    return displayBids.filter(b => {
+      if (!b.daysLeft && b.daysLeft !== 0) return false;
+      return b.daysLeft >= 0 && b.daysLeft <= 7;
+    }).length;
+  }, [hasLive, displayBids]);
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}>
 
@@ -128,10 +138,10 @@ export default function Demo() {
       }}>
         <div style={{ maxWidth: 1100, width: '100%', display: 'flex', gap: 0 }}>
           {[
-            { val: '1,000+', label: 'Active Bids' },
-            { val: '+12',    label: 'New Today' },
-            { val: '48',     label: 'Closing This Week' },
-            { val: '50',     label: 'States Covered' },
+            { val: total ? total.toLocaleString() : '1,000+', label: 'Active Bids' },
+            { val: closingThisWeek > 0 ? String(closingThisWeek) : '48+', label: 'Closing This Week' },
+            { val: '12',  label: 'Tech NAICS Codes' },
+            { val: '50',  label: 'States Covered' },
           ].map((s, i, arr) => (
             <div key={s.label} style={{
               flex: 1, textAlign: 'center', padding: '8px 0',
@@ -157,7 +167,8 @@ export default function Demo() {
           <TabBtn active={tab === 'foryou'} onClick={() => setTab('foryou')} locked>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg>
-              For You — Radar AI
+              Matched for You
+              <span style={{ fontSize: '.6rem', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--purple)', background: 'rgba(177,59,255,.1)', border: '1px solid rgba(177,59,255,.2)', padding: '1px 5px', borderRadius: 4 }}>Soon</span>
               <LockIcon size={11} />
             </span>
           </TabBtn>
@@ -349,12 +360,12 @@ function ForYouLocked({ onBrowseAll }: { onBrowseAll: () => void }) {
         </svg>
       </div>
 
-      <div className="eyebrow" style={{ marginBottom: 12 }}>Radar AI</div>
+      <div className="eyebrow" style={{ marginBottom: 12 }}>Coming Soon</div>
       <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 34px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', marginBottom: 14, lineHeight: 1.15 }}>
         Bids ranked for<br /><span className="gradient-text">your business.</span>
       </h2>
       <p style={{ color: 'var(--muted)', fontSize: '.9rem', lineHeight: 1.75, marginBottom: 32, maxWidth: 440, margin: '0 auto 32px' }}>
-        Sign up and tell us your company website. Radar AI builds a profile of your capabilities and scores every active bid 0–100% by fit — with a plain-English reason for each match.
+        Tell us your company website. GovSignal will build a profile of your capabilities and score every active bid 0–100% by fit — with a plain-English reason for each match.
       </p>
 
       {/* Preview of what it looks like — blurred cards */}
@@ -390,16 +401,16 @@ function ForYouLocked({ onBrowseAll }: { onBrowseAll: () => void }) {
             borderRadius: 14, padding: '16px 24px', textAlign: 'center',
           }}>
             <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
-              Activate Radar AI with your profile
+              Sign up to be first when this launches
             </div>
-            <div style={{ fontSize: '.72rem', color: 'var(--dim)' }}>Takes 60 seconds · no technical setup</div>
+            <div style={{ fontSize: '.72rem', color: 'var(--dim)' }}>Free accounts get early access</div>
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
         <a href="/#pricing" className="btn-accent" style={{ fontSize: '.9rem', padding: '11px 24px' }}>
-          Set Up My Radar Profile →
+          Get Early Access →
         </a>
         <button onClick={onBrowseAll} className="btn-primary" style={{ fontSize: '.9rem', padding: '11px 20px', border: 'none', cursor: 'pointer' }}>
           ← Browse All Bids

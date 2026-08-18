@@ -56,11 +56,11 @@ function StatItem({ value, label }: { value: string; label: string }) {
 
 /* ── Dashboard preview ───────────────────────────────────── */
 const DASHBOARD_BIDS = [
-  { state: 'GA', title: 'Statewide Digital Learning Infrastructure',  cat: 'EdTech',     due: 'Aug 15' },
-  { state: 'IL', title: 'Healthcare Information Exchange Platform',   cat: 'HealthIT',   due: 'Aug 22' },
-  { state: 'FL', title: 'Emergency Communications System Upgrade',    cat: 'Telecom',    due: 'Sep 3'  },
-  { state: 'OH', title: 'Dept. of Revenue Core System Modernization', cat: 'Software',   due: 'Aug 30' },
-  { state: 'AZ', title: 'Vehicle Fleet Telematics & GPS Platform',    cat: 'IoT',        due: 'Sep 10' },
+  { state: 'TX', title: 'Enterprise Cybersecurity Operations Center',   cat: 'CyberSec', due: 'Sep 5'  },
+  { state: 'VA', title: 'Cloud Infrastructure Modernization Program',  cat: 'Cloud',    due: 'Sep 12' },
+  { state: 'FL', title: 'Statewide Network Security Assessment',       cat: 'CyberSec', due: 'Sep 19' },
+  { state: 'OH', title: 'Digital Identity & Access Management Suite',  cat: 'Software', due: 'Oct 2'  },
+  { state: 'WA', title: 'AI-Assisted Fraud Detection Platform',        cat: 'AI & ML',  due: 'Oct 9'  },
 ];
 
 function DashboardPreview() {
