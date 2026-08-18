@@ -74,7 +74,6 @@ export default function Demo() {
   // Compute live stats from what we fetched (approximations for the strip)
   const closingThisWeek = useMemo(() => {
     if (!hasLive) return 48;
-    const cutoff = Date.now() + 7 * 86_400_000;
     return displayBids.filter(b => {
       if (!b.daysLeft && b.daysLeft !== 0) return false;
       return b.daysLeft >= 0 && b.daysLeft <= 7;
