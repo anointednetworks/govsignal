@@ -1,10 +1,9 @@
 const express = require('express');
 const cors    = require('cors');
 const cron    = require('node-cron');
-const fs      = require('fs');
-const path    = require('path');
 const pool    = require('./db');
 const { fetchSamBids } = require('./fetch-sam');
+const { requireAuth } = require('./auth');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -91,7 +90,7 @@ app.use(express.json());
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 /* ── GET /bids ───────────────────────────────────────────── */
-app.get('/bids', async (req, res) => {
+app.get('/bids', requireAuth, async (req, res) => {
   try {
     const {
       category, state, status = 'active',
@@ -140,7 +139,7 @@ app.get('/bids', async (req, res) => {
 });
 
 /* ── GET /bids/:id ───────────────────────────────────────── */
-app.get('/bids/:id', async (req, res) => {
+app.get('/bids/:id', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM bids WHERE id = $1', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
@@ -167,7 +166,7 @@ app.post('/admin/fetch', async (req, res) => {
 });
 
 /* ── GET /categories ─────────────────────────────────────── */
-app.get('/categories', async (_req, res) => {
+app.get('/categories', requireAuth, async (_req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT category, COUNT(*) as count

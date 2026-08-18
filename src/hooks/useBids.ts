@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 
 export interface Bid {
   id: number;
@@ -28,6 +29,7 @@ interface UseBidsOptions {
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 export function useBids(opts: UseBidsOptions = {}) {
+  const { getToken } = useAuth();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,9 @@ export function useBids(opts: UseBidsOptions = {}) {
       if (opts.offset)   params.set('offset',   String(opts.offset));
 
       try {
-        const res  = await fetch(`${API_URL}/bids?${params}`);
+        const token = await getToken();
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${API_URL}/bids?${params}`, { headers });
         if (!res.ok) throw new Error(`API ${res.status}`);
         const data = await res.json();
 
@@ -70,7 +74,7 @@ export function useBids(opts: UseBidsOptions = {}) {
 
     load();
     return () => { cancelled = true; };
-  }, [opts.limit, opts.offset, opts.category, opts.state, opts.status, opts.search]);
+  }, [opts.limit, opts.offset, opts.category, opts.state, opts.status, opts.search, getToken]);
 
   return { bids, loading, error, total };
 }
