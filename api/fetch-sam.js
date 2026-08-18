@@ -98,7 +98,7 @@ async function fetchSamBids() {
           const category = classifyBid(opp.title, opp.description);
           const stateCode = opp.placeOfPerformance?.state?.code ?? null;
 
-          await pool.query(
+          try { await pool.query(
             `INSERT INTO bids
               (sam_id, title, notice_type, agency, sub_agency, office,
                state_code, naics_code, set_aside, posted_date,
@@ -127,6 +127,7 @@ async function fetchSamBids() {
             ]
           );
           totalUpserted++;
+          } catch (rowErr) { console.warn(`Skip ${opp.noticeId}: ${rowErr.message}`); }
         }
 
         fetched += opps.length;
