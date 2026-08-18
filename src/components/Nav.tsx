@@ -1,4 +1,9 @@
+import { SignInButton, SignUpButton, useUser } from '@clerk/clerk-react'
+import { Link } from 'react-router-dom'
+
 export default function Nav() {
+  const { isSignedIn, isLoaded } = useUser()
+
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
@@ -7,10 +12,10 @@ export default function Nav() {
       borderBottom: '1px solid rgba(236, 72, 153, 0.14)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, padding: '0 24px', maxWidth: 1180, margin: '0 auto' }}>
-        <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '1rem', color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.02em' }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '1rem', color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.02em' }}>
           <span style={{ width: 30, height: 30, background: 'linear-gradient(135deg, var(--purple), var(--pink))', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.65rem', fontWeight: 800, color: '#fff' }}>GS</span>
           GovSignal
-        </a>
+        </Link>
 
         <div className="hidden md:flex" style={{ gap: 32 }}>
           {['Features', 'How It Works', 'Pricing'].map(label => (
@@ -23,10 +28,26 @@ export default function Nav() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="#" style={{ color: 'var(--muted)', fontSize: '.875rem', fontWeight: 500, textDecoration: 'none' }}>Log in</a>
-          <a href="/demo" className="btn-accent" style={{ fontSize: '.85rem', padding: '9px 18px' }}>Try Free →</a>
+          {isLoaded && isSignedIn ? (
+            <Link to="/dashboard" className="btn-accent" style={{ fontSize: '.85rem', padding: '9px 18px' }}>
+              Dashboard →
+            </Link>
+          ) : (
+            <>
+              <SignInButton mode="modal">
+                <button style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '.875rem', fontWeight: 500, cursor: 'pointer', padding: 0 }}>
+                  Log in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="btn-accent" style={{ fontSize: '.85rem', padding: '9px 18px' }}>
+                  Try Free →
+                </button>
+              </SignUpButton>
+            </>
+          )}
         </div>
       </div>
     </nav>
-  );
+  )
 }

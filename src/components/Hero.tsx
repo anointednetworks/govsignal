@@ -1,4 +1,9 @@
+import { SignUpButton, useUser } from '@clerk/clerk-react'
+import { Link } from 'react-router-dom'
+
 export default function Hero() {
+  const { isSignedIn, isLoaded } = useUser()
+
   return (
     <section style={{ minHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '100px 24px 60px', position: 'relative', overflow: 'hidden', marginTop: 64 }}>
       {/* Radial glow */}
@@ -8,12 +13,12 @@ export default function Hero() {
 
         {/* Badge pill */}
         <div className="ha1" style={{ marginBottom: 28 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(177,59,255,.1)', border: '1px solid rgba(177,59,255,.28)', borderRadius: 100, padding: '5px 14px 5px 7px', cursor: 'pointer' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(177,59,255,.1)', border: '1px solid rgba(177,59,255,.28)', borderRadius: 100, padding: '5px 14px 5px 7px' }}>
             <span className="gradient-bg" style={{ borderRadius: 100, padding: '2px 9px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg>
-              <span style={{ fontSize: '.7rem', color: '#fff', fontWeight: 700 }}>New</span>
+              <span style={{ fontSize: '.7rem', color: '#fff', fontWeight: 700 }}>Live</span>
             </span>
-            <span style={{ fontSize: '.8rem', color: 'var(--muted)', fontWeight: 500 }}>AI-matched bid intelligence for tech companies</span>
+            <span style={{ fontSize: '.8rem', color: 'var(--muted)', fontWeight: 500 }}>Bid intelligence for technology companies</span>
             <span style={{ color: 'var(--dim)', fontSize: '.8rem' }}>→</span>
           </div>
         </div>
@@ -23,14 +28,22 @@ export default function Hero() {
         </h1>
 
         <p className="ha3" style={{ fontSize: 'clamp(16px, 2.2vw, 19px)', color: 'var(--muted)', lineHeight: 1.7, maxWidth: 580, margin: '0 auto 40px', fontWeight: 400 }}>
-          GovSignal tracks government procurement activity across the entire United States and delivers every technology opportunity to your inbox — classified, AI-scored, and ready to bid.
+          GovSignal delivers every U.S. government technology opportunity to your team — classified by category, sorted by deadline, and ready to act on before the day begins.
         </p>
 
         <div className="ha4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-          <a href="/demo" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 30px' }}>
-            Start Free — 7 Days
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-          </a>
+          {isLoaded && isSignedIn ? (
+            <Link to="/dashboard" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 30px' }}>
+              Go to Dashboard →
+            </Link>
+          ) : (
+            <SignUpButton mode="modal">
+              <button className="btn-accent" style={{ fontSize: '1rem', padding: '14px 30px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                Start Free — 7 Days
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+              </button>
+            </SignUpButton>
+          )}
           <a href="#features" className="btn-primary" style={{ fontSize: '1rem', padding: '14px 30px' }}>See how it works</a>
         </div>
 
@@ -46,9 +59,9 @@ export default function Hero() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function Dot() {
-  return <span style={{ color: 'rgba(255,255,255,.12)' }}>·</span>;
+  return <span style={{ color: 'rgba(255,255,255,.12)' }}>·</span>
 }

@@ -1,3 +1,5 @@
+import { SignUpButton, useUser } from '@clerk/clerk-react';
+import { Link } from 'react-router-dom';
 import Nav from './components/Nav';
 import Hero from './components/Hero';
 import Ticker from './components/Ticker';
@@ -23,6 +25,19 @@ export default function App() {
       <CTA />
       <Footer />
     </>
+  );
+}
+
+/* ── Shared CTA button — opens Clerk sign-up or goes to dashboard ── */
+function CtaButton({ label, style }: { label: string; style?: React.CSSProperties }) {
+  const { isSignedIn, isLoaded } = useUser();
+  if (isLoaded && isSignedIn) {
+    return <Link to="/dashboard" className="btn-accent" style={style}>{label}</Link>;
+  }
+  return (
+    <SignUpButton mode="modal">
+      <button className="btn-accent" style={{ border: 'none', cursor: 'pointer', ...style }}>{label}</button>
+    </SignUpButton>
   );
 }
 
@@ -77,11 +92,11 @@ function DashboardPreview() {
             Every bid.<br /><span className="gradient-text">One place.</span>
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '.975rem', lineHeight: 1.75, marginBottom: 32, maxWidth: 420 }}>
-            Every U.S. technology contract in one place — classified by category, scored by AI, and ready to act on before your day begins.
+            Every U.S. technology contract in one place — classified by category, sorted by deadline, and ready to act on before your day begins.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <a href="/demo" className="btn-accent">Start Free Trial</a>
-            <a href="#" className="btn-primary">Preview Dashboard</a>
+            <CtaButton label="Start Free Trial" />
+            <a href="/demo" className="btn-primary">Preview Dashboard</a>
           </div>
         </div>
 
@@ -143,7 +158,7 @@ function CTA() {
             Join IT companies across the U.S. who start every morning with GovSignal — the complete picture of what's out there, matched to your business.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/demo" className="btn-accent" style={{ fontSize: '1rem', padding: '14px 32px' }}>Start Free — 7-Day Trial →</a>
+            <CtaButton label="Start Free — 7-Day Trial →" style={{ fontSize: '1rem', padding: '14px 32px' }} />
             <a href="#features" className="btn-primary" style={{ fontSize: '1rem', padding: '14px 32px' }}>See how it works</a>
           </div>
         </div>
