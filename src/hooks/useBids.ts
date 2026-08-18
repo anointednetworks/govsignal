@@ -46,7 +46,7 @@ export function useBids(opts: UseBidsOptions = {}) {
       setError(null);
 
       const params = new URLSearchParams();
-      if (opts.status)   params.set('status',   opts.status);
+      params.set('status', opts.status ?? 'active');
       if (opts.category) params.set('category', opts.category);
       if (opts.state)    params.set('state',    opts.state);
       if (opts.search)   params.set('search',   opts.search);
