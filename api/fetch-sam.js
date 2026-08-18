@@ -32,6 +32,10 @@ const CATEGORY_MAP = [
   [/training|e-learning|lms|learning management/i, 'EdTech'],
 ];
 
+function nullIfEmpty(v) {
+  return (v === '' || v == null) ? null : v;
+}
+
 function classifyBid(title = '', desc = '') {
   const text = `${title} ${desc}`.toLowerCase();
   for (const [pattern, cat] of CATEGORY_MAP) {
@@ -108,16 +112,16 @@ async function fetchSamBids() {
             [
               opp.noticeId,
               opp.title,
-              opp.type,
-              opp.organizationHierarchy?.[0]?.name ?? opp.fullParentPathName?.split('.')[0] ?? null,
-              opp.organizationHierarchy?.[1]?.name ?? null,
-              opp.organizationHierarchy?.[2]?.name ?? null,
-              stateCode,
+              nullIfEmpty(opp.type),
+              nullIfEmpty(opp.organizationHierarchy?.[0]?.name ?? opp.fullParentPathName?.split('.')[0]),
+              nullIfEmpty(opp.organizationHierarchy?.[1]?.name),
+              nullIfEmpty(opp.organizationHierarchy?.[2]?.name),
+              nullIfEmpty(stateCode),
               naics,
-              opp.typeOfSetAside ?? null,
-              opp.postedDate ?? null,
-              opp.responseDeadLine ?? null,
-              opp.description ?? null,
+              nullIfEmpty(opp.typeOfSetAside),
+              nullIfEmpty(opp.postedDate),
+              nullIfEmpty(opp.responseDeadLine),
+              nullIfEmpty(opp.description),
               opp.uiLink ?? `https://sam.gov/opp/${opp.noticeId}/view`,
               category,
             ]
