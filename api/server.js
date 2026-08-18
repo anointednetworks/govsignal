@@ -10,9 +10,66 @@ const app  = express();
 const PORT = process.env.PORT || 3001;
 
 async function runSchema() {
-  const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-  await pool.query(sql);
-  console.log('Schema ready');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bids (
+        id          SERIAL PRIMARY KEY,
+        sam_id      TEXT UNIQUE NOT NULL,
+        title       TEXT NOT NULL,
+        notice_type TEXT,
+        agency      TEXT,
+        sub_agency  TEXT,
+        office      TEXT,
+        state_code  TEXT,
+        naics_code  TEXT,
+        set_aside   TEXT,
+        posted_date DATE,
+        response_deadline TIMESTAMPTZ,
+        description TEXT,
+        sam_url     TEXT,
+        category    TEXT,
+        status      TEXT NOT NULL DEFAULT 'active',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS fetch_log (
+        id           SERIAL PRIMARY KEY,
+        started_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        finished_at  TIMESTAMPTZ,
+        bids_upserted INT,
+        bids_expired  INT,
+        error_message TEXT,
+        duration_ms  INT
+      )
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS bids_status_idx     ON bids (status)');
+    await client.query('CREATE INDEX IF NOT EXISTS bids_category_idx   ON bids (category)');
+    await client.query('CREATE INDEX IF NOT EXISTS bids_state_code_idx ON bids (state_code)');
+    await client.query('CREATE INDEX IF NOT EXISTS bids_response_dl_idx ON bids (response_deadline)');
+    await client.query(`
+      CREATE OR REPLACE FUNCTION update_updated_at()
+      RETURNS TRIGGER AS $$
+      BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+      $$ LANGUAGE plpgsql
+    `);
+    await client.query('DROP TRIGGER IF EXISTS bids_updated_at ON bids');
+    await client.query(`
+      CREATE TRIGGER bids_updated_at
+        BEFORE UPDATE ON bids
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+    `);
+    await client.query('COMMIT');
+    console.log('Schema ready');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 const ALLOWED_ORIGINS = [
