@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
 
 export interface Bid {
-  id: string;
+  id: number;
   sam_id: string;
   title: string;
   notice_type: string | null;
   agency: string | null;
-  sub_agency: string | null;
   state_code: string | null;
   naics_code: string | null;
   set_aside: string | null;
@@ -20,10 +18,14 @@ export interface Bid {
 
 interface UseBidsOptions {
   limit?: number;
+  offset?: number;
   category?: string;
   state?: string;
   status?: string;
+  search?: string;
 }
+
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 export function useBids(opts: UseBidsOptions = {}) {
   const [bids, setBids] = useState<Bid[]>([]);
@@ -32,38 +34,43 @@ export function useBids(opts: UseBidsOptions = {}) {
   const [total, setTotal] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!API_URL) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function load() {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from('bids')
-        .select('*', { count: 'exact' })
-        .eq('status', opts.status ?? 'active')
-        .order('response_deadline', { ascending: true });
+      const params = new URLSearchParams();
+      if (opts.status)   params.set('status',   opts.status);
+      if (opts.category) params.set('category', opts.category);
+      if (opts.state)    params.set('state',    opts.state);
+      if (opts.search)   params.set('search',   opts.search);
+      if (opts.limit)    params.set('limit',    String(opts.limit));
+      if (opts.offset)   params.set('offset',   String(opts.offset));
 
-      if (opts.category) query = query.eq('category', opts.category);
-      if (opts.state)    query = query.eq('state_code', opts.state);
-      if (opts.limit)    query = query.limit(opts.limit);
+      try {
+        const res  = await fetch(`${API_URL}/bids?${params}`);
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const data = await res.json();
 
-      const { data, error: err, count } = await query;
-
-      if (cancelled) return;
-
-      if (err) {
-        setError(err.message);
-      } else {
-        setBids(data ?? []);
-        setTotal(count);
+        if (cancelled) return;
+        setBids(data.bids ?? []);
+        setTotal(data.total ?? null);
+      } catch (err: unknown) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     }
 
     load();
     return () => { cancelled = true; };
-  }, [opts.limit, opts.category, opts.state, opts.status]);
+  }, [opts.limit, opts.offset, opts.category, opts.state, opts.status, opts.search]);
 
   return { bids, loading, error, total };
 }
