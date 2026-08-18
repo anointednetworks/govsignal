@@ -1,11 +1,19 @@
 const express = require('express');
 const cors    = require('cors');
 const cron    = require('node-cron');
+const fs      = require('fs');
+const path    = require('path');
 const pool    = require('./db');
 const { fetchSamBids } = require('./fetch-sam');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
+
+async function runSchema() {
+  const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+  await pool.query(sql);
+  console.log('Schema ready');
+}
 
 const ALLOWED_ORIGINS = [
   'https://govsignal.pages.dev',
@@ -125,4 +133,6 @@ cron.schedule('0 5 * * *', async () => {
   }
 });
 
-app.listen(PORT, () => console.log(`GovSignal API running on port ${PORT}`));
+runSchema()
+  .then(() => app.listen(PORT, () => console.log(`GovSignal API running on port ${PORT}`)))
+  .catch(err => { console.error('Schema failed:', err.message); process.exit(1); });
