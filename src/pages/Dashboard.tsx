@@ -60,6 +60,8 @@ export default function Dashboard() {
   const [state, setState]       = useState('')
   const [category, setCategory] = useState('')
   const [offset, setOffset]     = useState(0)
+  const [filterBarH, setFilterBarH] = useState(120)
+  const filterBarRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearch = useDebounce(search)
   const categories = useCategories()
@@ -73,6 +75,14 @@ export default function Dashboard() {
       prevFilters.current = { debouncedSearch, state, category }
     }
   }, [debouncedSearch, state, category])
+
+  useEffect(() => {
+    const el = filterBarRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setFilterBarH(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const { bids, loading, error, total } = useBids({
     search: debouncedSearch || undefined,
@@ -132,7 +142,7 @@ export default function Dashboard() {
       <div style={{ paddingTop: 56 }}>
 
         {/* Header + filters */}
-        <div style={{
+        <div ref={filterBarRef} style={{
           borderBottom: '1px solid var(--border)',
           background: 'rgba(14,10,31,.7)', backdropFilter: 'blur(12px)',
           position: 'sticky', top: 56, zIndex: 90,
@@ -301,6 +311,8 @@ export default function Dashboard() {
                   gap: 12, padding: '8px 16px',
                   fontSize: '.68rem', color: 'var(--dim)', letterSpacing: '.08em', textTransform: 'uppercase',
                   borderBottom: '1px solid var(--border)',
+                  position: 'sticky', top: 56 + filterBarH, zIndex: 80,
+                  background: 'var(--bg)',
                 }}>
                   <span>State</span>
                   <span>Title</span>
