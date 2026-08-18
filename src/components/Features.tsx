@@ -4,7 +4,7 @@ const FEATURES = [
   {
     num: '01',
     title: 'Daily Bid Alerts',
-    desc: 'A curated email brief of every new tech bid matching your keywords lands before 6 AM — before your day starts, before your competitors see it.',
+    desc: 'A curated brief of every new tech bid matching your profile lands before 6 AM — so you walk into every morning already knowing what to pursue.',
     preview: (
       <div style={{ background: 'rgba(14,10,31,.7)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, fontSize: '.75rem' }}>
         <div style={{ color: 'var(--dim)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -60,7 +60,7 @@ const FEATURES = [
   {
     num: '04',
     title: 'Smart Search & Filters',
-    desc: 'Filter by category, state, contract value, agency type, and closing date. Every bid is classified at ingest — no sifting through irrelevant listings.',
+    desc: 'Filter by category, state, contract value, agency type, and closing date. Every bid is pre-classified by technology category — no sifting through irrelevant listings.',
     preview: (
       <div style={{ background: 'rgba(14,10,31,.7)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: 'var(--dim)', fontSize: '.8rem' }}>
@@ -118,7 +118,7 @@ export default function Features() {
         <div ref={ref} className="reveal" style={{ textAlign: 'center', marginBottom: 64 }}>
           <div className="eyebrow" style={{ marginBottom: 14 }}>Features</div>
           <h2 style={{ fontSize: 'clamp(28px, 4.5vw, 48px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', marginBottom: 16 }}>
-            Everything your team needs to win.
+            Built for IT companies who pursue government work.
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '.975rem', maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
             Purpose-built for IT companies pursuing government contracts — from your first bid alert to the win.

@@ -77,7 +77,7 @@ function DashboardPreview() {
             Every bid.<br /><span className="gradient-text">One place.</span>
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '.975rem', lineHeight: 1.75, marginBottom: 32, maxWidth: 420 }}>
-            Stop spending hours hunting across government websites. GovSignal brings every U.S. technology contract to a single dashboard — classified by category, scored by AI, and ready to act on.
+            Every U.S. technology contract in one place — classified by category, scored by AI, and ready to act on before your day begins.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <a href="/demo" className="btn-accent">Start Free Trial</a>
@@ -137,7 +137,7 @@ function CTA() {
         <div ref={ref} className="reveal">
           <div className="eyebrow" style={{ marginBottom: 16 }}>Start Today</div>
           <h2 style={{ fontSize: 'clamp(32px, 5.5vw, 64px)', fontWeight: 800, letterSpacing: '-0.05em', color: 'var(--text)', marginBottom: 20, lineHeight: 1.06 }}>
-            Stop missing bids.<br /><span className="gradient-text">Start winning contracts.</span>
+            The bid is posted.<br /><span className="gradient-text">Be first to see it.</span>
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '1rem', maxWidth: 460, margin: '0 auto 40px', lineHeight: 1.7 }}>
             Join IT companies across the U.S. who start every morning with GovSignal — the complete picture of what's out there, matched to your business.

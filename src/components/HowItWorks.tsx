@@ -7,7 +7,7 @@ const STEPS = [
     ),
     label: 'We Monitor',
     title: 'Federal Procurement',
-    desc: 'Our intelligence platform continuously monitors federal procurement activity — solicitations, RFQs, and contract awards from civilian and defense agencies — updated multiple times per day.',
+    desc: 'GovSignal keeps a continuous eye on federal procurement — solicitations, RFQs, and contract awards across civilian and defense agencies — so your team never has to scan them manually.',
     chips: ['Civilian Agencies', 'Defense Contracting', 'Federal Awards'],
   },
   {
@@ -16,7 +16,7 @@ const STEPS = [
     ),
     label: 'We Monitor',
     title: 'All 50 States',
-    desc: 'State and territorial procurement activity is tracked across all 50 states. Every tech-relevant opportunity is captured and classified before it reaches your dashboard.',
+    desc: 'State and territorial procurement opportunities in every U.S. state are surfaced, classified by technology category, and scored — before they reach your dashboard.',
     chips: ['State Governments', 'Territorial Agencies', 'All 50 States'],
   },
   {
@@ -25,15 +25,15 @@ const STEPS = [
     ),
     label: 'We Monitor',
     title: 'Cities & Counties',
-    desc: 'Municipal and county-level procurement is tracked nationwide — from the largest metro governments down to smaller local agencies that publish technology contracts.',
+    desc: 'Local government opportunities — from the largest metro areas to smaller municipal and county agencies — are included in every GovSignal account, coast to coast.',
     chips: ['Major Metro Areas', 'County Procurement', 'Local Agencies'],
   },
 ];
 
 const PIPELINE = [
-  { label: 'Step 1', text: 'We Collect',  sub: 'nationwide, 24/7',       gold: false, green: false },
-  { label: 'Step 2', text: 'We Classify', sub: 'tech bids only',          gold: false, green: false },
-  { label: 'Step 3', text: 'AI Scores',   sub: 'ranked by fit',           gold: true,  green: false },
+  { label: 'Step 1', text: 'Coverage',    sub: 'federal, state & local',  gold: false, green: false },
+  { label: 'Step 2', text: 'Relevance',   sub: 'tech bids only',          gold: false, green: false },
+  { label: 'Step 3', text: 'Your Match',  sub: 'ranked by fit',           gold: true,  green: false },
   { label: 'Step 4', text: 'You Win',     sub: 'in your inbox by 6 AM',   gold: false, green: true  },
 ];
 
@@ -48,10 +48,10 @@ export default function HowItWorks() {
         <div ref={headRef} className="reveal" style={{ textAlign: 'center', marginBottom: 64 }}>
           <div className="eyebrow" style={{ marginBottom: 14 }}>How It Works</div>
           <h2 style={{ fontSize: 'clamp(28px, 4.5vw, 48px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', marginBottom: 16 }}>
-            Three steps to your next contract.
+            Built around your next win.
           </h2>
           <p style={{ color: 'var(--muted)', fontSize: '.975rem', maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
-            Our proprietary intelligence platform does the heavy lifting so your team spends time bidding, not searching.
+            We handle the sourcing. Your team handles the winning.
           </p>
         </div>
 
