@@ -96,11 +96,11 @@ const FEATURES = [
   },
   {
     num: '06',
-    title: 'Coast-to-Coast Coverage',
-    desc: 'GovSignal coverage spans federal agencies, all 50 states, and hundreds of municipal and county governments — so no technology contract slips through.',
+    title: 'Federal Coverage Nationwide',
+    desc: 'GovSignal indexes SAM.gov — the official U.S. federal procurement database — covering every federal agency and defense contract across all 50 states. State portal coverage coming soon.',
     preview: (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {['Federal Agencies', 'Defense Contracts', 'All 50 States', 'Major Metro Areas', 'County Governments', 'Education Sector', 'Public Utilities', 'Hundreds more'].map(s => (
+        {['Federal Agencies', 'Defense Contracts', 'Civilian Agencies', 'DoD & Military', 'Education Sector', 'Public Utilities', 'Research Institutions', 'State Portals (soon)'].map(s => (
           <span key={s} className="source-chip">{s}</span>
         ))}
       </div>

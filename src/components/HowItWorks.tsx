@@ -15,9 +15,9 @@ const STEPS = [
       <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M4 18V9l7-5 7 5v9" stroke="var(--purple)" strokeWidth="1.6" /><rect x="9" y="13" width="4" height="5" stroke="var(--purple)" strokeWidth="1.5" /></svg>
     ),
     label: 'We Monitor',
-    title: 'All 50 States',
-    desc: 'State and territorial procurement opportunities in every U.S. state are surfaced, classified by technology category, and scored — before they reach your dashboard.',
-    chips: ['State Governments', 'Territorial Agencies', 'All 50 States'],
+    title: 'Federal Contracts Nationwide',
+    desc: 'Every U.S. federal technology contract from SAM.gov — classified by category, filtered by state, and scored for relevance before they reach your dashboard.',
+    chips: ['Federal Agencies', 'Defense Contracts', 'All 50 States'],
   },
   {
     icon: (

@@ -140,7 +140,7 @@ export default function Demo() {
             { val: total ? total.toLocaleString() : '1,000+', label: 'Active Bids' },
             { val: closingThisWeek > 0 ? String(closingThisWeek) : '48+', label: 'Closing This Week' },
             { val: '12',  label: 'Tech NAICS Codes' },
-            { val: '50',  label: 'States Covered' },
+            { val: '50',  label: 'States (Federal)' },
           ].map((s, i, arr) => (
             <div key={s.label} style={{
               flex: 1, textAlign: 'center', padding: '8px 0',

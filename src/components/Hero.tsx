@@ -53,7 +53,7 @@ export default function Hero() {
           <Dot />
           <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>1,000+ active bids</span>
           <Dot />
-          <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Nationwide coverage</span>
+          <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Federal contracts nationwide</span>
           <Dot />
           <span style={{ color: 'var(--dim)', fontSize: '.85rem' }}>Free 7-day trial</span>
         </div>

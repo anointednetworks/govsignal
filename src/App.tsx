@@ -45,7 +45,7 @@ function CtaButton({ label, style }: { label: string; style?: React.CSSPropertie
 const STAT_ITEMS = [
   { value: '2,400+', label: 'Active Bids' },
   { value: '180+',   label: 'New This Week' },
-  { value: '50',     label: 'States Covered' },
+  { value: '50',     label: 'States (Federal)' },
   { value: '15+',    label: 'Tech Categories' },
 ];
 
