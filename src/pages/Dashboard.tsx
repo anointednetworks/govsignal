@@ -49,6 +49,27 @@ function useDebounce(value: string, delay = 400) {
   return debounced
 }
 
+function useStats() {
+  const { getToken } = useAuth()
+  const [stats, setStats] = useState<{ total_active: number; closing_this_week: number; new_today: number } | null>(null)
+
+  useEffect(() => {
+    if (!API_URL) return
+    async function load() {
+      try {
+        const token = await getToken()
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch(`${API_URL}/stats`, { headers })
+        if (!res.ok) return
+        setStats(await res.json())
+      } catch { /* non-fatal */ }
+    }
+    load()
+  }, [getToken])
+
+  return stats
+}
+
 function useBidDetail(id: number | null) {
   const { getToken } = useAuth()
   const [detail, setDetail] = useState<Bid | null>(null)
@@ -94,6 +115,7 @@ export default function Dashboard() {
 
   const debouncedSearch = useDebounce(search)
   const categories = useCategories()
+  const stats = useStats()
   const { detail, loading: detailLoading } = useBidDetail(selectedBid?.id ?? null)
 
   // Reset pagination when filters change
@@ -339,6 +361,32 @@ export default function Dashboard() {
                   }}
                 >Clear all filters</button>
               )}
+            </div>
+          )}
+
+          {/* Stat bar */}
+          {stats && !hasFilters && (
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 12, padding: '20px 0 4px',
+            }}>
+              {[
+                { label: 'Active Bids',        value: stats.total_active.toLocaleString(),      sub: 'in database',          color: 'rgba(177,59,255,.7)' },
+                { label: 'Closing This Week',   value: stats.closing_this_week.toLocaleString(), sub: 'due in ≤ 7 days',       color: '#f87171' },
+                { label: 'New Today',           value: stats.new_today.toLocaleString(),         sub: 'posted since midnight',  color: 'var(--green)' },
+              ].map(s => (
+                <div key={s.label} style={{
+                  background: 'rgba(255,255,255,.03)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12, padding: '14px 18px',
+                }}>
+                  <div style={{ fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 800, color: s.color, letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' }}>
+                    {s.value}
+                  </div>
+                  <div style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--text)', marginTop: 2 }}>{s.label}</div>
+                  <div style={{ fontSize: '.65rem', color: 'var(--dim)', marginTop: 1 }}>{s.sub}</div>
+                </div>
+              ))}
             </div>
           )}
 

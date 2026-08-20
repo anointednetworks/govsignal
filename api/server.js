@@ -165,6 +165,30 @@ app.post('/admin/fetch', async (req, res) => {
   }
 });
 
+/* ── GET /stats ──────────────────────────────────────────── */
+app.get('/stats', requireAuth, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'active')                                          AS total_active,
+        COUNT(*) FILTER (WHERE status = 'active'
+          AND response_deadline >= NOW()
+          AND response_deadline <= NOW() + INTERVAL '7 days')                              AS closing_this_week,
+        COUNT(*) FILTER (WHERE status = 'active'
+          AND posted_date >= CURRENT_DATE)                                                  AS new_today
+      FROM bids
+    `);
+    const r = rows[0];
+    res.json({
+      total_active:       parseInt(r.total_active),
+      closing_this_week:  parseInt(r.closing_this_week),
+      new_today:          parseInt(r.new_today),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 /* ── GET /categories ─────────────────────────────────────── */
 app.get('/categories', requireAuth, async (_req, res) => {
   try {
