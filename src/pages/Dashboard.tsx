@@ -1,7 +1,7 @@
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useBids } from '../hooks/useBids'
+import { useBids, type Bid } from '../hooks/useBids'
 
 const API_URL = import.meta.env.VITE_API_URL ?? ''
 
@@ -49,6 +49,34 @@ function useDebounce(value: string, delay = 400) {
   return debounced
 }
 
+function useBidDetail(id: number | null) {
+  const { getToken } = useAuth()
+  const [detail, setDetail] = useState<Bid | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!id || !API_URL) return
+    let cancelled = false
+    setLoading(true)
+    setDetail(null)
+    async function load() {
+      try {
+        const token = await getToken()
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch(`${API_URL}/bids/${id}`, { headers })
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) setDetail(data)
+      } catch { /* non-fatal */ }
+      finally { if (!cancelled) setLoading(false) }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [id, getToken])
+
+  return { detail, loading }
+}
+
 const PAGE = 50
 
 export default function Dashboard() {
@@ -56,15 +84,17 @@ export default function Dashboard() {
   const { signOut } = useClerk()
   const navigate = useNavigate()
 
-  const [search, setSearch]     = useState('')
-  const [state, setState]       = useState('')
-  const [category, setCategory] = useState('')
-  const [offset, setOffset]     = useState(0)
+  const [search, setSearch]         = useState('')
+  const [state, setState]           = useState('')
+  const [category, setCategory]     = useState('')
+  const [offset, setOffset]         = useState(0)
   const [filterBarH, setFilterBarH] = useState(120)
+  const [selectedBid, setSelectedBid] = useState<Bid | null>(null)
   const filterBarRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearch = useDebounce(search)
   const categories = useCategories()
+  const { detail, loading: detailLoading } = useBidDetail(selectedBid?.id ?? null)
 
   // Reset pagination when filters change
   const prevFilters = useRef({ debouncedSearch, state, category })
@@ -82,6 +112,13 @@ export default function Dashboard() {
     const ro = new ResizeObserver(() => setFilterBarH(el.offsetHeight))
     ro.observe(el)
     return () => ro.disconnect()
+  }, [])
+
+  // Close panel on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedBid(null) }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }, [])
 
   const { bids, loading, error, total } = useBids({
@@ -106,6 +143,9 @@ export default function Dashboard() {
 
   const canLoadMore = total !== null && offset + PAGE < total
   const showing = Math.min(offset + PAGE, total ?? 0)
+
+  // The full bid to display in panel (detail once loaded, else fall back to list data)
+  const panelBid = detail ?? selectedBid
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'Inter, sans-serif' }}>
@@ -327,16 +367,22 @@ export default function Dashboard() {
                   const due = deadline ? deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'
                   const urgent = daysLeft !== null && daysLeft <= 7
                   const soon   = daysLeft !== null && daysLeft <= 14 && !urgent
+                  const isSelected = selectedBid?.id === bid.id
 
                   return (
-                    <div key={bid.id} style={{
-                      display: 'grid', gridTemplateColumns: '60px 1fr 180px 120px 100px',
-                      gap: 12, padding: '12px 16px', alignItems: 'center',
-                      borderBottom: '1px solid rgba(255,255,255,.04)',
-                      transition: 'background .15s',
-                    }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(177,59,255,.04)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    <div key={bid.id}
+                      onClick={() => setSelectedBid(isSelected ? null : bid)}
+                      style={{
+                        display: 'grid', gridTemplateColumns: '60px 1fr 180px 120px 100px',
+                        gap: 12, padding: '12px 16px', alignItems: 'center',
+                        borderBottom: '1px solid rgba(255,255,255,.04)',
+                        transition: 'background .15s',
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(177,59,255,.08)' : 'transparent',
+                        borderLeft: isSelected ? '2px solid rgba(177,59,255,.6)' : '2px solid transparent',
+                      }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(177,59,255,.04)' }}
+                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                     >
                       <span style={{
                         background: 'rgba(177,59,255,.12)', border: '1px solid rgba(177,59,255,.2)',
@@ -345,13 +391,10 @@ export default function Dashboard() {
                         fontFamily: 'ui-monospace, monospace',
                       }}>{bid.state_code ?? 'US'}</span>
 
-                      <a href={bid.sam_url ?? '#'} target="_blank" rel="noopener noreferrer" style={{
-                        color: 'var(--text)', textDecoration: 'none', fontSize: '.84rem', fontWeight: 500,
-                        lineHeight: 1.4,
-                      }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--purple)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text)')}
-                      >{bid.title}</a>
+                      <span style={{
+                        color: isSelected ? 'var(--purple)' : 'var(--text)',
+                        fontSize: '.84rem', fontWeight: 500, lineHeight: 1.4,
+                      }}>{bid.title}</span>
 
                       <span style={{ color: 'var(--muted)', fontSize: '.78rem', lineHeight: 1.35 }}>
                         {bid.agency ?? '—'}
@@ -409,13 +452,207 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Backdrop */}
+      {selectedBid && (
+        <div
+          onClick={() => setSelectedBid(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 190,
+            background: 'rgba(0,0,0,.45)',
+            animation: 'fadeIn .2s ease',
+          }}
+        />
+      )}
+
+      {/* Detail panel */}
+      {selectedBid && (
+        <BidDetailPanel
+          bid={panelBid ?? selectedBid}
+          detailLoading={detailLoading}
+          onClose={() => setSelectedBid(null)}
+        />
+      )}
+
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: .6; }
           50% { opacity: .3; }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
         select option { background: #1a1030; color: #e2d9f3; }
       `}</style>
+    </div>
+  )
+}
+
+function BidDetailPanel({ bid, detailLoading, onClose }: {
+  bid: Bid
+  detailLoading: boolean
+  onClose: () => void
+}) {
+  const deadline = bid.response_deadline ? new Date(bid.response_deadline) : null
+  const daysLeft = deadline ? Math.ceil((deadline.getTime() - Date.now()) / 86_400_000) : null
+  const due = deadline
+    ? deadline.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : 'TBD'
+  const posted = bid.posted_date
+    ? new Date(bid.posted_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : null
+  const urgent = daysLeft !== null && daysLeft <= 7
+  const soon   = daysLeft !== null && daysLeft <= 14 && !urgent
+
+  const META: { label: string; value: string | null }[] = [
+    { label: 'Deadline',   value: due + (daysLeft != null && daysLeft > 0 ? ` · ${daysLeft}d left` : '') },
+    { label: 'Posted',     value: posted },
+    { label: 'State',      value: bid.state_code },
+    { label: 'NAICS',      value: bid.naics_code },
+    { label: 'Set-Aside',  value: bid.set_aside },
+    { label: 'Notice Type',value: bid.notice_type },
+    { label: 'Category',   value: bid.category },
+  ].filter(m => m.value)
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 200,
+      width: 'min(480px, 100vw)',
+      background: 'rgba(14,10,31,.98)', backdropFilter: 'blur(24px)',
+      borderLeft: '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column',
+      animation: 'slideIn .25s cubic-bezier(.4,0,.2,1)',
+    }}>
+
+      {/* Panel header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '16px 20px',
+        borderBottom: '1px solid var(--border)',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {bid.category && (
+            <span style={{
+              background: 'rgba(177,59,255,.15)', border: '1px solid rgba(177,59,255,.3)',
+              color: 'rgba(177,59,255,.9)', borderRadius: 6, padding: '2px 8px',
+              fontSize: '.65rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
+            }}>{bid.category}</span>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close panel"
+          style={{
+            background: 'rgba(255,255,255,.07)', border: '1px solid var(--border)',
+            borderRadius: 8, width: 32, height: 32,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--muted)', fontSize: '1rem',
+            flexShrink: 0,
+          }}
+        >✕</button>
+      </div>
+
+      {/* Scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px' }}>
+
+        {/* Title */}
+        <h2 style={{
+          fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700, color: 'var(--text)',
+          lineHeight: 1.4, marginBottom: 16, letterSpacing: '-0.02em',
+        }}>{bid.title}</h2>
+
+        {/* Agency */}
+        {bid.agency && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: '.9rem', fontWeight: 600, color: 'var(--muted)' }}>{bid.agency}</div>
+            {bid.sub_agency && (
+              <div style={{ fontSize: '.8rem', color: 'var(--dim)', marginTop: 2 }}>{bid.sub_agency}</div>
+            )}
+          </div>
+        )}
+
+        {/* Deadline badge */}
+        {daysLeft !== null && daysLeft > 0 && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: urgent ? 'rgba(239,68,68,.1)' : soon ? 'rgba(245,158,11,.1)' : 'rgba(177,59,255,.1)',
+            border: `1px solid ${urgent ? 'rgba(239,68,68,.25)' : soon ? 'rgba(245,158,11,.25)' : 'rgba(177,59,255,.2)'}`,
+            color: urgent ? '#f87171' : soon ? '#fcd34d' : 'var(--muted)',
+            borderRadius: 8, padding: '6px 12px', fontSize: '.78rem', fontWeight: 600,
+            marginBottom: 20,
+          }}>
+            <span>{urgent ? '🔴' : soon ? '🟡' : '📅'}</span>
+            <span>Closes {due} · {daysLeft}d left</span>
+          </div>
+        )}
+
+        {/* Meta grid */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
+          marginBottom: 24,
+        }}>
+          {META.map(m => (
+            <div key={m.label} style={{
+              background: 'rgba(255,255,255,.04)', border: '1px solid var(--border)',
+              borderRadius: 10, padding: '10px 12px',
+            }}>
+              <div style={{ fontSize: '.6rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--dim)', marginBottom: 4 }}>{m.label}</div>
+              <div style={{ fontSize: '.8rem', color: 'var(--muted)', wordBreak: 'break-word' }}>{m.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Description */}
+        {detailLoading && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+            <div style={{ height: 14, borderRadius: 6, background: 'rgba(255,255,255,.06)', animation: 'pulse 1.5s ease-in-out infinite', marginBottom: 8 }} />
+            <div style={{ height: 14, borderRadius: 6, background: 'rgba(255,255,255,.06)', animation: 'pulse 1.5s ease-in-out infinite', width: '80%', marginBottom: 8 }} />
+            <div style={{ height: 14, borderRadius: 6, background: 'rgba(255,255,255,.06)', animation: 'pulse 1.5s ease-in-out infinite', width: '60%' }} />
+          </div>
+        )}
+
+        {!detailLoading && bid.description && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+            <div style={{ fontSize: '.68rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--dim)', marginBottom: 12 }}>Description</div>
+            <p style={{
+              fontSize: '.82rem', color: 'var(--muted)', lineHeight: 1.7,
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              maxHeight: 320, overflowY: 'auto',
+            }}>{bid.description}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer CTA */}
+      <div style={{
+        padding: '16px 20px',
+        borderTop: '1px solid var(--border)',
+        flexShrink: 0,
+        display: 'flex', gap: 10,
+      }}>
+        <a
+          href={bid.sam_url ?? `https://sam.gov/opp/${bid.sam_id}/view`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, textAlign: 'center', textDecoration: 'none',
+            background: 'linear-gradient(135deg, rgba(177,59,255,.2), rgba(255,45,146,.15))',
+            border: '1px solid rgba(177,59,255,.4)',
+            color: 'var(--purple)', borderRadius: 10, padding: '11px 20px',
+            fontSize: '.85rem', fontWeight: 700, letterSpacing: '.02em',
+            transition: 'opacity .15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '.8')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+        >
+          View on SAM.gov →
+        </a>
+      </div>
     </div>
   )
 }

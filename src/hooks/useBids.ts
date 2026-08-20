@@ -7,11 +7,13 @@ export interface Bid {
   title: string;
   notice_type: string | null;
   agency: string | null;
+  sub_agency: string | null;
   state_code: string | null;
   naics_code: string | null;
   set_aside: string | null;
   posted_date: string | null;
   response_deadline: string | null;
+  description: string | null;
   sam_url: string | null;
   category: string | null;
   status: string;
