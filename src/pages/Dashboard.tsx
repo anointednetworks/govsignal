@@ -49,6 +49,51 @@ function useDebounce(value: string, delay = 400) {
   return debounced
 }
 
+function useSavedBids() {
+  const { getToken } = useAuth()
+  const [savedIds, setSavedIds] = useState<Set<number>>(new Set())
+  const [watchlistBids, setWatchlistBids] = useState<Bid[]>([])
+
+  const reload = useCallback(async () => {
+    if (!API_URL) return
+    try {
+      const token = await getToken()
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+      const res = await fetch(`${API_URL}/saved-bids`, { headers })
+      if (!res.ok) return
+      const data = await res.json()
+      setWatchlistBids(data.bids ?? [])
+      setSavedIds(new Set((data.bids ?? []).map((b: Bid) => b.id)))
+    } catch { /* non-fatal */ }
+  }, [getToken])
+
+  useEffect(() => { reload() }, [reload])
+
+  const save = useCallback(async (bid: Bid) => {
+    setSavedIds(prev => new Set([...prev, bid.id]))
+    setWatchlistBids(prev => [bid, ...prev.filter(b => b.id !== bid.id)])
+    try {
+      const token = await getToken()
+      const headers: HeadersInit = token
+        ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/json' }
+      await fetch(`${API_URL}/saved-bids`, { method: 'POST', headers, body: JSON.stringify({ bid_id: bid.id }) })
+    } catch { reload() }
+  }, [getToken, reload])
+
+  const unsave = useCallback(async (bidId: number) => {
+    setSavedIds(prev => { const n = new Set(prev); n.delete(bidId); return n })
+    setWatchlistBids(prev => prev.filter(b => b.id !== bidId))
+    try {
+      const token = await getToken()
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+      await fetch(`${API_URL}/saved-bids/${bidId}`, { method: 'DELETE', headers })
+    } catch { reload() }
+  }, [getToken, reload])
+
+  return { savedIds, watchlistBids, save, unsave }
+}
+
 function useStats() {
   const { getToken } = useAuth()
   const [stats, setStats] = useState<{ total_active: number; closing_this_week: number; new_today: number } | null>(null)
@@ -111,11 +156,13 @@ export default function Dashboard() {
   const [offset, setOffset]         = useState(0)
   const [filterBarH, setFilterBarH] = useState(120)
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null)
+  const [watchlistMode, setWatchlistMode] = useState(false)
   const filterBarRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearch = useDebounce(search)
   const categories = useCategories()
   const stats = useStats()
+  const { savedIds, watchlistBids, save, unsave } = useSavedBids()
   const { detail, loading: detailLoading } = useBidDetail(selectedBid?.id ?? null)
 
   // Reset pagination when filters change
@@ -152,6 +199,7 @@ export default function Dashboard() {
   })
 
   const hasFilters = !!(search || state || category)
+  const displayBids = watchlistMode ? watchlistBids : bids
 
   const clearFilters = useCallback(() => {
     setSearch(''); setState(''); setCategory(''); setOffset(0)
@@ -212,20 +260,39 @@ export default function Dashboard() {
         }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', margin: 0 }}>
-                Active Opportunities
-              </h1>
-              {!loading && !error && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              {/* Tab toggle */}
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,.05)', border: '1px solid var(--border)', borderRadius: 10, padding: 3, gap: 2 }}>
+                {(['All Bids', 'Watchlist'] as const).map(tab => {
+                  const active = tab === 'Watchlist' ? watchlistMode : !watchlistMode
+                  return (
+                    <button key={tab} onClick={() => { setWatchlistMode(tab === 'Watchlist'); setSelectedBid(null) }} style={{
+                      background: active ? 'rgba(177,59,255,.2)' : 'transparent',
+                      border: active ? '1px solid rgba(177,59,255,.35)' : '1px solid transparent',
+                      color: active ? 'var(--purple)' : 'var(--dim)',
+                      borderRadius: 7, padding: '5px 14px', fontSize: '.78rem', fontWeight: 600, cursor: 'pointer',
+                      transition: 'all .15s',
+                    }}>
+                      {tab}{tab === 'Watchlist' && savedIds.size > 0 ? ` (${savedIds.size})` : ''}
+                    </button>
+                  )
+                })}
+              </div>
+              {!loading && !error && !watchlistMode && (
                 <span style={{ fontSize: '.8rem', color: 'var(--dim)' }}>
                   {total !== null ? `${total.toLocaleString()} bids` : '—'}
                   {hasFilters && total !== null && ` matching filters`}
                 </span>
               )}
+              {watchlistMode && (
+                <span style={{ fontSize: '.8rem', color: 'var(--dim)' }}>
+                  {savedIds.size} saved
+                </span>
+              )}
             </div>
 
-            {/* Filter row */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Filter row — hidden in watchlist mode */}
+            <div style={{ display: watchlistMode ? 'none' : 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
 
               {/* Search */}
               <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 340 }}>
@@ -340,18 +407,20 @@ export default function Dashboard() {
           )}
 
           {/* Empty state */}
-          {!loading && !error && bids.length === 0 && (
+          {!loading && !error && displayBids.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>📭</div>
+              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>{watchlistMode ? '🔖' : '📭'}</div>
               <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 8, fontSize: '1.1rem' }}>
-                {hasFilters ? 'No bids match your filters' : 'No active bids right now'}
+                {watchlistMode ? 'Your watchlist is empty' : hasFilters ? 'No bids match your filters' : 'No active bids right now'}
               </div>
               <div style={{ color: 'var(--muted)', fontSize: '.85rem', maxWidth: 340, margin: '0 auto 24px' }}>
-                {hasFilters
-                  ? 'Try removing a filter or broadening your search.'
-                  : 'Our daily fetch runs every morning at 5 AM UTC. Check back tomorrow.'}
+                {watchlistMode
+                  ? 'Click the bookmark icon on any bid to save it here.'
+                  : hasFilters
+                    ? 'Try removing a filter or broadening your search.'
+                    : 'Our daily fetch runs every morning at 5 AM UTC. Check back tomorrow.'}
               </div>
-              {hasFilters && (
+              {hasFilters && !watchlistMode && (
                 <button
                   onClick={clearFilters}
                   style={{
@@ -365,7 +434,7 @@ export default function Dashboard() {
           )}
 
           {/* Stat bar */}
-          {stats && !hasFilters && (
+          {stats && !hasFilters && !watchlistMode && (
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 12, padding: '20px 0 4px',
@@ -391,11 +460,11 @@ export default function Dashboard() {
           )}
 
           {/* Table */}
-          {!loading && !error && bids.length > 0 && (
+          {!loading && !error && displayBids.length > 0 && (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingTop: 8 }}>
                 <div style={{
-                  display: 'grid', gridTemplateColumns: '60px 1fr 180px 120px 100px',
+                  display: 'grid', gridTemplateColumns: '60px 1fr 180px 120px 100px 36px',
                   gap: 12, padding: '8px 16px',
                   fontSize: '.68rem', color: 'var(--dim)', letterSpacing: '.08em', textTransform: 'uppercase',
                   borderBottom: '1px solid var(--border)',
@@ -407,21 +476,23 @@ export default function Dashboard() {
                   <span>Agency</span>
                   <span>Category</span>
                   <span>Due</span>
+                  <span />
                 </div>
 
-                {bids.map(bid => {
+                {displayBids.map(bid => {
                   const deadline = bid.response_deadline ? new Date(bid.response_deadline) : null
                   const daysLeft = deadline ? Math.ceil((deadline.getTime() - Date.now()) / 86_400_000) : null
                   const due = deadline ? deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'
                   const urgent = daysLeft !== null && daysLeft <= 7
                   const soon   = daysLeft !== null && daysLeft <= 14 && !urgent
                   const isSelected = selectedBid?.id === bid.id
+                  const isSaved = savedIds.has(bid.id)
 
                   return (
                     <div key={bid.id}
                       onClick={() => setSelectedBid(isSelected ? null : bid)}
                       style={{
-                        display: 'grid', gridTemplateColumns: '60px 1fr 180px 120px 100px',
+                        display: 'grid', gridTemplateColumns: '60px 1fr 180px 120px 100px 36px',
                         gap: 12, padding: '12px 16px', alignItems: 'center',
                         borderBottom: '1px solid rgba(255,255,255,.04)',
                         transition: 'background .15s',
@@ -462,39 +533,61 @@ export default function Dashboard() {
                           </div>
                         )}
                       </div>
+
+                      {/* Bookmark button */}
+                      <button
+                        onClick={e => { e.stopPropagation(); isSaved ? unsave(bid.id) : save(bid) }}
+                        title={isSaved ? 'Remove from watchlist' : 'Save to watchlist'}
+                        style={{
+                          background: isSaved ? 'rgba(177,59,255,.15)' : 'transparent',
+                          border: isSaved ? '1px solid rgba(177,59,255,.3)' : '1px solid transparent',
+                          borderRadius: 7, width: 30, height: 30,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', fontSize: '.85rem',
+                          color: isSaved ? 'var(--purple)' : 'var(--dim)',
+                          transition: 'all .15s', flexShrink: 0,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(177,59,255,.3)'; e.currentTarget.style.color = 'var(--purple)' }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = isSaved ? 'rgba(177,59,255,.3)' : 'transparent'
+                          e.currentTarget.style.color = isSaved ? 'var(--purple)' : 'var(--dim)'
+                        }}
+                      >{isSaved ? '🔖' : '🔖'}</button>
                     </div>
                   )
                 })}
               </div>
 
-              {/* Pagination */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, flexWrap: 'wrap', gap: 12 }}>
-                <span style={{ fontSize: '.8rem', color: 'var(--dim)' }}>
-                  Showing {offset + 1}–{showing} of {total?.toLocaleString()} bids
-                </span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {offset > 0 && (
-                    <button
-                      onClick={() => setOffset(o => Math.max(0, o - PAGE))}
-                      style={{
-                        background: 'rgba(255,255,255,.05)', border: '1px solid var(--border)',
-                        color: 'var(--muted)', borderRadius: 8, padding: '7px 16px',
-                        fontSize: '.82rem', cursor: 'pointer',
-                      }}
-                    >← Previous</button>
-                  )}
-                  {canLoadMore && (
-                    <button
-                      onClick={() => setOffset(o => o + PAGE)}
-                      style={{
-                        background: 'rgba(177,59,255,.15)', border: '1px solid rgba(177,59,255,.3)',
-                        color: 'var(--purple)', borderRadius: 8, padding: '7px 16px',
-                        fontSize: '.82rem', fontWeight: 600, cursor: 'pointer',
-                      }}
-                    >Next 50 →</button>
-                  )}
+              {/* Pagination — only in all-bids mode */}
+              {!watchlistMode && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, flexWrap: 'wrap', gap: 12 }}>
+                  <span style={{ fontSize: '.8rem', color: 'var(--dim)' }}>
+                    Showing {offset + 1}–{showing} of {total?.toLocaleString()} bids
+                  </span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {offset > 0 && (
+                      <button
+                        onClick={() => setOffset(o => Math.max(0, o - PAGE))}
+                        style={{
+                          background: 'rgba(255,255,255,.05)', border: '1px solid var(--border)',
+                          color: 'var(--muted)', borderRadius: 8, padding: '7px 16px',
+                          fontSize: '.82rem', cursor: 'pointer',
+                        }}
+                      >← Previous</button>
+                    )}
+                    {canLoadMore && (
+                      <button
+                        onClick={() => setOffset(o => o + PAGE)}
+                        style={{
+                          background: 'rgba(177,59,255,.15)', border: '1px solid rgba(177,59,255,.3)',
+                          color: 'var(--purple)', borderRadius: 8, padding: '7px 16px',
+                          fontSize: '.82rem', fontWeight: 600, cursor: 'pointer',
+                        }}
+                      >Next 50 →</button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -517,6 +610,9 @@ export default function Dashboard() {
         <BidDetailPanel
           bid={panelBid ?? selectedBid}
           detailLoading={detailLoading}
+          isSaved={savedIds.has(selectedBid.id)}
+          onSave={() => save(panelBid ?? selectedBid)}
+          onUnsave={() => unsave(selectedBid.id)}
           onClose={() => setSelectedBid(null)}
         />
       )}
@@ -540,9 +636,12 @@ export default function Dashboard() {
   )
 }
 
-function BidDetailPanel({ bid, detailLoading, onClose }: {
+function BidDetailPanel({ bid, detailLoading, isSaved, onSave, onUnsave, onClose }: {
   bid: Bid
   detailLoading: boolean
+  isSaved: boolean
+  onSave: () => void
+  onUnsave: () => void
   onClose: () => void
 }) {
   const deadline = bid.response_deadline ? new Date(bid.response_deadline) : null
@@ -683,6 +782,19 @@ function BidDetailPanel({ bid, detailLoading, onClose }: {
         flexShrink: 0,
         display: 'flex', gap: 10,
       }}>
+        <button
+          onClick={isSaved ? onUnsave : onSave}
+          title={isSaved ? 'Remove from watchlist' : 'Save to watchlist'}
+          style={{
+            background: isSaved ? 'rgba(177,59,255,.15)' : 'rgba(255,255,255,.05)',
+            border: `1px solid ${isSaved ? 'rgba(177,59,255,.35)' : 'var(--border)'}`,
+            color: isSaved ? 'var(--purple)' : 'var(--muted)',
+            borderRadius: 10, padding: '11px 16px',
+            fontSize: '.85rem', fontWeight: 600, cursor: 'pointer',
+            flexShrink: 0, transition: 'all .15s',
+          }}
+        >{isSaved ? '🔖 Saved' : '🔖 Save'}</button>
+
         <a
           href={bid.sam_url ?? `https://sam.gov/opp/${bid.sam_id}/view`}
           target="_blank"

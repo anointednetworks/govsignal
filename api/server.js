@@ -50,6 +50,15 @@ async function runSchema() {
     await client.query('CREATE INDEX IF NOT EXISTS bids_state_code_idx ON bids (state_code)');
     await client.query('CREATE INDEX IF NOT EXISTS bids_response_dl_idx ON bids (response_deadline)');
     await client.query(`
+      CREATE TABLE IF NOT EXISTS saved_bids (
+        user_id  TEXT        NOT NULL,
+        bid_id   INTEGER     NOT NULL REFERENCES bids(id) ON DELETE CASCADE,
+        saved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, bid_id)
+      )
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS saved_bids_user_idx ON saved_bids (user_id)');
+    await client.query(`
       CREATE OR REPLACE FUNCTION update_updated_at()
       RETURNS TRIGGER AS $$
       BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
@@ -146,6 +155,53 @@ app.get('/bids/:id', requireAuth, async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+/* ── GET /saved-bids ─────────────────────────────────────── */
+app.get('/saved-bids', requireAuth, async (req, res) => {
+  const userId = req.user?.sub ?? 'dev';
+  try {
+    const { rows } = await pool.query(
+      `SELECT b.* FROM bids b
+       JOIN saved_bids s ON s.bid_id = b.id
+       WHERE s.user_id = $1
+       ORDER BY s.saved_at DESC`,
+      [userId]
+    );
+    res.json({ bids: rows, total: rows.length });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+/* ── POST /saved-bids ────────────────────────────────────── */
+app.post('/saved-bids', requireAuth, async (req, res) => {
+  const userId = req.user?.sub ?? 'dev';
+  const { bid_id } = req.body;
+  if (!bid_id) return res.status(400).json({ error: 'bid_id required' });
+  try {
+    await pool.query(
+      `INSERT INTO saved_bids (user_id, bid_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [userId, bid_id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+/* ── DELETE /saved-bids/:bid_id ──────────────────────────── */
+app.delete('/saved-bids/:bid_id', requireAuth, async (req, res) => {
+  const userId = req.user?.sub ?? 'dev';
+  try {
+    await pool.query(
+      `DELETE FROM saved_bids WHERE user_id = $1 AND bid_id = $2`,
+      [userId, req.params.bid_id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
 });
