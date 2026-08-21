@@ -2,8 +2,9 @@ const express = require('express');
 const cors    = require('cors');
 const cron    = require('node-cron');
 const pool    = require('./db');
-const { fetchSamBids } = require('./fetch-sam');
-const { requireAuth } = require('./auth');
+const { fetchSamBids }    = require('./fetch-sam');
+const { requireAuth }     = require('./auth');
+const { sendDailyDigest } = require('./digest');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -58,6 +59,14 @@ async function runSchema() {
       )
     `);
     await client.query('CREATE INDEX IF NOT EXISTS saved_bids_user_idx ON saved_bids (user_id)');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_prefs (
+        user_id         TEXT        PRIMARY KEY,
+        token           TEXT        NOT NULL UNIQUE,
+        unsubscribed_at TIMESTAMPTZ,
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
     await client.query(`
       CREATE OR REPLACE FUNCTION update_updated_at()
       RETURNS TRIGGER AS $$
@@ -259,6 +268,45 @@ app.get('/categories', requireAuth, async (_req, res) => {
   }
 });
 
+/* ── GET /unsubscribe ────────────────────────────────────── */
+app.get('/unsubscribe', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).send('Missing token.');
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE email_prefs SET unsubscribed_at = NOW()
+       WHERE token = $1 AND unsubscribed_at IS NULL`,
+      [token]
+    );
+    if (!rowCount) return res.send('Already unsubscribed or link expired.');
+    res.send(`
+      <html><body style="font-family:sans-serif;text-align:center;padding:80px 24px;background:#06040f;color:#e2d9f3;">
+        <h2 style="color:#b13bff;">Unsubscribed</h2>
+        <p style="color:#8b7ab8;">You've been removed from GovSignal daily emails.</p>
+        <a href="${process.env.APP_URL ?? 'https://govsignal.pages.dev'}/dashboard"
+           style="color:#b13bff;">Return to dashboard →</a>
+      </body></html>
+    `);
+  } catch (err) {
+    res.status(500).send('Something went wrong. Please try again.');
+  }
+});
+
+/* ── POST /admin/send-digest ─────────────────────────────── */
+app.post('/admin/send-digest', async (req, res) => {
+  const secret = req.headers['x-admin-secret'];
+  if (secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const result = await sendDailyDigest();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('Digest send failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ── Cron: daily fetch at 5 AM UTC ──────────────────────── */
 cron.schedule('0 5 * * *', async () => {
   console.log('Cron: starting daily SAM.gov fetch');
@@ -266,6 +314,17 @@ cron.schedule('0 5 * * *', async () => {
     await fetchSamBids();
   } catch (err) {
     console.error('Cron fetch failed:', err.message);
+  }
+});
+
+/* ── Cron: daily digest at 6 AM UTC ─────────────────────── */
+cron.schedule('0 6 * * *', async () => {
+  console.log('Cron: sending daily digest');
+  try {
+    const result = await sendDailyDigest();
+    console.log('Digest sent:', result);
+  } catch (err) {
+    console.error('Cron digest failed:', err.message);
   }
 });
 
