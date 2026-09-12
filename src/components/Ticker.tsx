@@ -1,12 +1,14 @@
 const BIDS = [
-  'Statewide Identity & Access Management Platform · Due Aug 5',
-  'School District ERP Replacement · Due Aug 19',
-  'Public Works Asset Management System · Due Jul 28',
-  'Broadband Infrastructure Planning Tool · Due Aug 12',
-  'Department of Revenue Tax Portal Upgrade · Due Sep 2',
-  'Municipal Court Case Management Software · Due Aug 8',
-  'Transit Authority Real-Time Passenger App · Due Jul 31',
-  'State Health Exchange Data Warehouse · Due Sep 15',
+  'Statewide Identity & Access Management Platform · Due Oct 3',
+  'School District ERP Replacement · Due Sep 26',
+  'Public Works Asset Management System · Due Oct 14',
+  'Broadband Infrastructure Planning Tool · Due Sep 30',
+  'Department of Revenue Tax Portal Upgrade · Due Oct 21',
+  'Municipal Court Case Management Software · Due Sep 19',
+  'Transit Authority Real-Time Passenger App · Due Oct 7',
+  'State Health Exchange Data Warehouse · Due Nov 1',
+  'Federal Cybersecurity Operations Center Modernization · Due Oct 17',
+  'DoD Logistics & Supply Chain Analytics Platform · Due Sep 24',
 ];
 
 export default function Ticker() {
