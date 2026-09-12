@@ -1,6 +1,5 @@
 import React from 'react';
 import { SignUpButton, useUser, useAuth } from '@clerk/clerk-react';
-import { Link } from 'react-router-dom';
 import { useReveal } from '../hooks/useReveal';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '';
