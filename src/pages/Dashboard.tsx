@@ -1,5 +1,5 @@
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
-import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useBids, type Bid } from '../hooks/useBids'
 
@@ -657,16 +657,17 @@ export default function Dashboard() {
               Email us to keep your access after the trial ends.
             </div>
           </div>
-          <a
-            href={`mailto:sales@brookhaven-hathaway.com?subject=GovSignal%20Subscription&body=Hi%2C%20I%27d%20like%20to%20subscribe%20to%20GovSignal.%0A%0AAccount%3A%20${encodeURIComponent(user.emailAddresses[0]?.emailAddress ?? '')}`}
+          <CheckoutButton
+            priceId={import.meta.env.VITE_STRIPE_PRICE_YEARLY ?? ''}
             style={{
               background: 'linear-gradient(135deg, rgba(251,191,36,.25), rgba(251,191,36,.15))',
               border: '1px solid rgba(251,191,36,.4)',
               color: '#fcd34d', borderRadius: 9, padding: '8px 16px',
-              fontSize: '.8rem', fontWeight: 700, textDecoration: 'none',
+              fontSize: '.8rem', fontWeight: 700, cursor: 'pointer',
               flexShrink: 0, whiteSpace: 'nowrap',
             }}
-          >Subscribe →</a>
+            label="Subscribe →"
+          />
         </div>
       )}
 
@@ -716,18 +717,53 @@ export default function Dashboard() {
   )
 }
 
-function PaywallOverlay({ email, status }: { email: string; status: SubStatus }) {
-  const headline = status === 'past_due'
-    ? 'Payment issue — access paused'
-    : 'Your trial has ended'
-  const sub = status === 'past_due'
-    ? 'There was a problem with your last payment. Email us and we\'ll sort it out.'
-    : 'To keep full access to GovSignal, choose a plan and email us to get started.'
+const PRICE_ID_MONTHLY   = import.meta.env.VITE_STRIPE_PRICE_MONTHLY   ?? ''
+const PRICE_ID_QUARTERLY = import.meta.env.VITE_STRIPE_PRICE_QUARTERLY ?? ''
+const PRICE_ID_YEARLY    = import.meta.env.VITE_STRIPE_PRICE_YEARLY    ?? ''
 
-  const subject = encodeURIComponent('GovSignal Subscription')
-  const body = encodeURIComponent(
-    `Hi,\n\nI'd like to subscribe to GovSignal.\n\nAccount: ${email}\n\nPlan preference: Monthly ($49) / Quarterly ($125) / Yearly ($490)\n\n`
+function CheckoutButton({ priceId, label, style }: { priceId: string; label: string; style?: React.CSSProperties }) {
+  const { getToken } = useAuth()
+  const [loading, setLoading] = useState(false)
+
+  async function go() {
+    if (!API_URL || !priceId) return
+    setLoading(true)
+    try {
+      const token = await getToken()
+      const r = await fetch(`${API_URL}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ price_id: priceId }),
+      })
+      const { url, error } = await r.json()
+      if (url) window.location.href = url
+      else console.error('Checkout error:', error)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button onClick={go} disabled={loading} style={{ border: 'none', ...style, opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer' }}>
+      {loading ? 'Redirecting…' : label}
+    </button>
   )
+}
+
+function PaywallOverlay({ status }: { email: string; status: SubStatus }) {
+  const isPastDue = status === 'past_due'
+  const headline = isPastDue ? 'Payment issue — access paused' : 'Your trial has ended'
+  const sub = isPastDue
+    ? 'There was a problem with your last payment. Start a new subscription to restore access.'
+    : 'Choose a plan below to keep full access to GovSignal.'
+
+  const plans = [
+    { label: 'Monthly',   price: '$49',  period: '/mo',  priceId: PRICE_ID_MONTHLY,   popular: false },
+    { label: 'Quarterly', price: '$125', period: '/qtr', priceId: PRICE_ID_QUARTERLY, popular: false },
+    { label: 'Yearly',    price: '$490', period: '/yr',  priceId: PRICE_ID_YEARLY,    popular: true  },
+  ]
 
   return (
     <div style={{
@@ -741,7 +777,6 @@ function PaywallOverlay({ email, status }: { email: string; status: SubStatus })
         borderRadius: 20, padding: '48px 40px', maxWidth: 480, width: '100%',
         textAlign: 'center', boxShadow: '0 0 80px rgba(177,59,255,.12), 0 40px 80px rgba(0,0,0,.6)',
       }}>
-        {/* Logo */}
         <div style={{
           width: 48, height: 48, borderRadius: 13,
           background: 'linear-gradient(135deg, var(--purple), var(--pink))',
@@ -758,50 +793,30 @@ function PaywallOverlay({ email, status }: { email: string; status: SubStatus })
           {sub}
         </p>
 
-        {/* Pricing reminder */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 32,
-        }}>
-          {[
-            { label: 'Monthly',   price: '$49',  sub: '/mo' },
-            { label: 'Quarterly', price: '$125', sub: '/qtr' },
-            { label: 'Yearly',    price: '$490', sub: '/yr', badge: 'Best value' },
-          ].map(p => (
-            <div key={p.label} style={{
-              background: 'rgba(255,255,255,.04)', border: '1px solid var(--border)',
-              borderRadius: 10, padding: '12px 8px', position: 'relative',
-            }}>
-              {p.badge && (
-                <div style={{
-                  position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
-                  background: 'linear-gradient(135deg, var(--purple), var(--pink))',
-                  color: '#fff', fontSize: '.55rem', fontWeight: 700,
-                  padding: '2px 8px', borderRadius: 100, letterSpacing: '.08em',
-                  textTransform: 'uppercase', whiteSpace: 'nowrap',
-                }}>{p.badge}</div>
-              )}
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em' }}>{p.price}</div>
-              <div style={{ fontSize: '.65rem', color: 'var(--dim)' }}>{p.sub}</div>
-              <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginTop: 2 }}>{p.label}</div>
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          {plans.map(p => (
+            <CheckoutButton
+              key={p.label}
+              priceId={p.priceId}
+              label={`${p.label} — ${p.price}${p.period}${p.popular ? ' · Best value' : ''}`}
+              style={{
+                display: 'block', width: '100%', borderRadius: 12,
+                padding: '13px 24px', fontSize: '.9rem', fontWeight: 700,
+                letterSpacing: '.01em',
+                ...(p.popular ? {
+                  background: 'linear-gradient(135deg, rgba(177,59,255,.35), rgba(255,45,146,.25))',
+                  border: '1px solid rgba(177,59,255,.6)', color: '#e2d9f3',
+                } : {
+                  background: 'rgba(255,255,255,.05)', border: '1px solid var(--border)',
+                  color: 'var(--muted)',
+                }),
+              }}
+            />
           ))}
         </div>
 
-        <a
-          href={`mailto:sales@brookhaven-hathaway.com?subject=${subject}&body=${body}`}
-          style={{
-            display: 'block', textDecoration: 'none',
-            background: 'linear-gradient(135deg, rgba(177,59,255,.3), rgba(255,45,146,.2))',
-            border: '1px solid rgba(177,59,255,.5)',
-            color: '#e2d9f3', borderRadius: 12, padding: '14px 32px',
-            fontSize: '.95rem', fontWeight: 700, letterSpacing: '.02em',
-            marginBottom: 12,
-          }}
-        >
-          Email us to subscribe →
-        </a>
         <p style={{ fontSize: '.75rem', color: 'var(--dim)', margin: 0 }}>
-          sales@brookhaven-hathaway.com · reply within 1 business day
+          7-day free trial · no card required · cancel anytime
         </p>
       </div>
     </div>
