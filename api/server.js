@@ -6,6 +6,10 @@ const { fetchSamBids }    = require('./fetch-sam');
 const { requireAuth }     = require('./auth');
 const { sendDailyDigest } = require('./digest');
 
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
+
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
@@ -115,6 +119,82 @@ app.use(cors({
     cb(new Error('CORS blocked'));
   },
 }));
+
+/* ── POST /webhooks/stripe — must be before express.json() ── */
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Stripe webhook sig failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session  = event.data.object;
+        const userId   = session.client_reference_id;
+        const sub      = await stripe.subscriptions.retrieve(session.subscription);
+        const priceId  = sub.items.data[0].price.id;
+        let plan = 'monthly';
+        if (priceId === process.env.STRIPE_PRICE_YEARLY)    plan = 'yearly';
+        else if (priceId === process.env.STRIPE_PRICE_QUARTERLY) plan = 'quarterly';
+        await pool.query(
+          `INSERT INTO subscriptions
+             (user_id, stripe_customer_id, stripe_subscription_id, plan, status, trial_ends_at, current_period_end)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)
+           ON CONFLICT (user_id) DO UPDATE SET
+             stripe_customer_id     = EXCLUDED.stripe_customer_id,
+             stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+             plan                   = EXCLUDED.plan,
+             status                 = EXCLUDED.status,
+             trial_ends_at          = COALESCE(EXCLUDED.trial_ends_at, subscriptions.trial_ends_at),
+             current_period_end     = EXCLUDED.current_period_end,
+             updated_at             = NOW()`,
+          [
+            userId, session.customer, session.subscription, plan, sub.status,
+            sub.trial_end ? new Date(sub.trial_end * 1000) : null,
+            new Date(sub.current_period_end * 1000),
+          ]
+        );
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const sub     = event.data.object;
+        const priceId = sub.items.data[0].price.id;
+        let plan = 'monthly';
+        if (priceId === process.env.STRIPE_PRICE_YEARLY)    plan = 'yearly';
+        else if (priceId === process.env.STRIPE_PRICE_QUARTERLY) plan = 'quarterly';
+        await pool.query(
+          `UPDATE subscriptions SET plan=$1, status=$2, current_period_end=$3, updated_at=NOW()
+           WHERE stripe_customer_id=$4`,
+          [plan, sub.status, new Date(sub.current_period_end * 1000), sub.customer]
+        );
+        break;
+      }
+      case 'customer.subscription.deleted':
+        await pool.query(
+          `UPDATE subscriptions SET status='canceled', updated_at=NOW() WHERE stripe_customer_id=$1`,
+          [event.data.object.customer]
+        );
+        break;
+      case 'invoice.payment_failed':
+        await pool.query(
+          `UPDATE subscriptions SET status='past_due', updated_at=NOW() WHERE stripe_customer_id=$1`,
+          [event.data.object.customer]
+        );
+        break;
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Webhook handler error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use(express.json());
 
 /* ── Health ──────────────────────────────────────────────── */
@@ -332,6 +412,47 @@ app.post('/admin/provision', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+/* ── POST /checkout ──────────────────────────────────────── */
+app.post('/checkout', requireAuth, async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+  const userId  = req.user?.sub;
+  const { price_id } = req.body;
+
+  const VALID = [
+    process.env.STRIPE_PRICE_MONTHLY,
+    process.env.STRIPE_PRICE_QUARTERLY,
+    process.env.STRIPE_PRICE_YEARLY,
+  ];
+  if (!price_id || !VALID.includes(price_id)) {
+    return res.status(400).json({ error: 'Invalid price_id' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT stripe_customer_id FROM subscriptions WHERE user_id = $1',
+      [userId]
+    );
+    const customerId = rows[0]?.stripe_customer_id || undefined;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{ price: price_id, quantity: 1 }],
+      customer: customerId,
+      client_reference_id: userId,
+      subscription_data: {
+        trial_period_days: 7,
+        metadata: { user_id: userId },
+      },
+      success_url: `${process.env.APP_URL ?? 'https://govsignal.pages.dev'}/dashboard?checkout=success`,
+      cancel_url:  `${process.env.APP_URL ?? 'https://govsignal.pages.dev'}/dashboard`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Checkout error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -1,6 +1,9 @@
-import { SignUpButton, useUser } from '@clerk/clerk-react';
+import React from 'react';
+import { SignUpButton, useUser, useAuth } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
 import { useReveal } from '../hooks/useReveal';
+
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 const FEATURES = [
   { icon: '🔍', title: 'Unlimited bid access', desc: 'Every active U.S. federal & state IT contract — no caps, no paywalled previews.' },
@@ -11,16 +14,52 @@ const FEATURES = [
   { icon: '📊', title: 'Full filter & search', desc: 'Slice by category, state, NAICS, set-aside type, and deadline — saved as views.' },
 ];
 
+const PRICE_ID_MONTHLY   = import.meta.env.VITE_STRIPE_PRICE_MONTHLY   ?? '';
+const PRICE_ID_QUARTERLY = import.meta.env.VITE_STRIPE_PRICE_QUARTERLY ?? '';
+const PRICE_ID_YEARLY    = import.meta.env.VITE_STRIPE_PRICE_YEARLY    ?? '';
+
 const BILLING = [
-  { period: 'Monthly',   price: '$49',  sub: '/month',    note: 'Most flexible',    popular: false, save: '' },
-  { period: 'Yearly',    price: '$490', sub: '/year',     note: 'Best value',       popular: true,  save: 'Save $98 vs monthly' },
-  { period: 'Quarterly', price: '$125', sub: '/quarter',  note: 'Good middle ground', popular: false, save: '' },
+  { period: 'Monthly',   price: '$49',  sub: '/month',    note: 'Most flexible',      popular: false, save: '',                    priceId: PRICE_ID_MONTHLY   },
+  { period: 'Yearly',    price: '$490', sub: '/year',     note: 'Best value',         popular: true,  save: 'Save $98 vs monthly', priceId: PRICE_ID_YEARLY    },
+  { period: 'Quarterly', price: '$125', sub: '/quarter',  note: 'Good middle ground', popular: false, save: '',                    priceId: PRICE_ID_QUARTERLY },
 ];
 
-function CtaButton({ popular, label }: { popular: boolean; label: string }) {
+function CtaButton({ popular, label, priceId }: { popular: boolean; label: string; priceId: string }) {
   const { isSignedIn, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const [loading, setLoading] = React.useState(false);
+
+  async function startCheckout() {
+    if (!API_URL || !priceId) { window.location.href = '/dashboard'; return; }
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const r = await fetch(`${API_URL}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ price_id: priceId }),
+      });
+      const { url, error } = await r.json();
+      if (url) window.location.href = url;
+      else console.error('Checkout error:', error);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (isLoaded && isSignedIn) {
-    return <Link to="/dashboard" className={popular ? 'btn-accent' : 'btn-primary'} style={{ width: '100%', justifyContent: 'center' }}>{label}</Link>;
+    return (
+      <button
+        onClick={startCheckout}
+        disabled={loading}
+        className={popular ? 'btn-accent' : 'btn-primary'}
+        style={{ width: '100%', justifyContent: 'center', border: 'none', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}
+      >
+        {loading ? 'Redirecting…' : label}
+      </button>
+    );
   }
   return (
     <SignUpButton mode="modal">
@@ -71,7 +110,7 @@ export default function Pricing() {
           <div ref={rightRef} className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="eyebrow" style={{ marginBottom: 4 }}>Choose billing cycle</div>
             {BILLING.map(plan => (
-              <BillingCard key={plan.period} {...plan} />
+              <BillingCard key={plan.period} {...plan} priceId={plan.priceId} />
             ))}
             <p style={{ fontSize: '.78rem', color: 'var(--dim)', marginTop: 4, textAlign: 'center' }}>
               7-day free trial · no card required · cancel anytime
@@ -89,8 +128,8 @@ export default function Pricing() {
   );
 }
 
-function BillingCard({ period, price, sub, note, popular, save }: {
-  period: string; price: string; sub: string; note: string; popular: boolean; save: string;
+function BillingCard({ period, price, sub, note, popular, save, priceId }: {
+  period: string; price: string; sub: string; note: string; popular: boolean; save: string; priceId: string;
 }) {
   const ref = useReveal();
   return (
@@ -115,7 +154,7 @@ function BillingCard({ period, price, sub, note, popular, save }: {
           {save}
         </div>
       )}
-      <CtaButton popular={popular} label="Start 7-day free trial →" />
+      <CtaButton popular={popular} label="Start 7-day free trial →" priceId={priceId} />
     </div>
   );
 }
