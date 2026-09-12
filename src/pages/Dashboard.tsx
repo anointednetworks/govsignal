@@ -115,6 +115,39 @@ function useStats() {
   return stats
 }
 
+type SubStatus = 'active' | 'trialing' | 'expired' | 'canceled' | 'past_due' | 'none'
+
+function useSubscription() {
+  const { getToken } = useAuth()
+  const [status, setStatus] = useState<SubStatus | null>(null)
+  const [trialEndsAt, setTrialEndsAt] = useState<Date | null>(null)
+
+  useEffect(() => {
+    if (!API_URL) { setStatus('active'); return } // local dev — no gate
+    async function load() {
+      try {
+        const token = await getToken()
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch(`${API_URL}/me/subscription`, { headers })
+        if (!res.ok) { setStatus('active'); return } // fail open
+        const data = await res.json()
+        setStatus(data.status as SubStatus)
+        if (data.trial_ends_at) setTrialEndsAt(new Date(data.trial_ends_at))
+      } catch {
+        setStatus('active') // fail open on network error
+      }
+    }
+    load()
+  }, [getToken])
+
+  const isGated = status !== null && status !== 'active' && status !== 'trialing'
+  const trialDaysLeft = trialEndsAt
+    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
+    : null
+
+  return { status, isGated, trialDaysLeft }
+}
+
 function useBidDetail(id: number | null) {
   const { getToken } = useAuth()
   const [detail, setDetail] = useState<Bid | null>(null)
@@ -190,6 +223,8 @@ export default function Dashboard() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  const { isGated, trialDaysLeft, status: subStatus } = useSubscription()
+
   const { bids, loading, error, total } = useBids({
     search: debouncedSearch || undefined,
     state:  state || undefined,
@@ -239,6 +274,17 @@ export default function Dashboard() {
         <span style={{ fontSize: '.82rem', color: 'var(--dim)' }}>
           {user.firstName ?? user.emailAddresses[0]?.emailAddress}
         </span>
+        {subStatus === 'active' && (
+          <a
+            href={`mailto:sales@brookhaven-hathaway.com?subject=GovSignal%20Subscription%20%E2%80%94%20Manage%20Account&body=Hi%2C%20I%27d%20like%20to%20manage%20my%20GovSignal%20subscription.%0A%0AAccount%3A%20${encodeURIComponent(user.emailAddresses[0]?.emailAddress ?? '')}`}
+            style={{
+              background: 'transparent', border: '1px solid var(--border)',
+              color: 'var(--dim)', borderRadius: 8, padding: '6px 14px',
+              fontSize: '.8rem', fontWeight: 600, cursor: 'pointer',
+              textDecoration: 'none',
+            }}
+          >Manage subscription</a>
+        )}
         <button
           onClick={() => signOut(() => navigate('/'))}
           style={{
@@ -593,6 +639,40 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Trial expiry banner — shown in last 3 days of trial */}
+      {subStatus === 'trialing' && trialDaysLeft !== null && trialDaysLeft <= 3 && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 300, background: 'rgba(20,12,40,.97)', backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(251,191,36,.3)', borderRadius: 14,
+          padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16,
+          boxShadow: '0 8px 40px rgba(0,0,0,.5)', maxWidth: 520, width: 'calc(100vw - 48px)',
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>⏳</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '.88rem', color: '#fcd34d' }}>
+              {trialDaysLeft === 0 ? 'Your trial expires today' : `${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} left in your trial`}
+            </div>
+            <div style={{ fontSize: '.78rem', color: 'var(--muted)', marginTop: 2 }}>
+              Email us to keep your access after the trial ends.
+            </div>
+          </div>
+          <a
+            href={`mailto:sales@brookhaven-hathaway.com?subject=GovSignal%20Subscription&body=Hi%2C%20I%27d%20like%20to%20subscribe%20to%20GovSignal.%0A%0AAccount%3A%20${encodeURIComponent(user.emailAddresses[0]?.emailAddress ?? '')}`}
+            style={{
+              background: 'linear-gradient(135deg, rgba(251,191,36,.25), rgba(251,191,36,.15))',
+              border: '1px solid rgba(251,191,36,.4)',
+              color: '#fcd34d', borderRadius: 9, padding: '8px 16px',
+              fontSize: '.8rem', fontWeight: 700, textDecoration: 'none',
+              flexShrink: 0, whiteSpace: 'nowrap',
+            }}
+          >Subscribe →</a>
+        </div>
+      )}
+
+      {/* Paywall overlay — shown when trial expired, canceled, or past_due */}
+      {isGated && <PaywallOverlay email={user.emailAddresses[0]?.emailAddress ?? ''} status={subStatus!} />}
+
       {/* Backdrop */}
       {selectedBid && (
         <div
@@ -632,6 +712,98 @@ export default function Dashboard() {
         }
         select option { background: #1a1030; color: #e2d9f3; }
       `}</style>
+    </div>
+  )
+}
+
+function PaywallOverlay({ email, status }: { email: string; status: SubStatus }) {
+  const headline = status === 'past_due'
+    ? 'Payment issue — access paused'
+    : 'Your trial has ended'
+  const sub = status === 'past_due'
+    ? 'There was a problem with your last payment. Email us and we\'ll sort it out.'
+    : 'To keep full access to GovSignal, choose a plan and email us to get started.'
+
+  const subject = encodeURIComponent('GovSignal Subscription')
+  const body = encodeURIComponent(
+    `Hi,\n\nI'd like to subscribe to GovSignal.\n\nAccount: ${email}\n\nPlan preference: Monthly ($49) / Quarterly ($125) / Yearly ($490)\n\n`
+  )
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 400,
+      background: 'rgba(6,4,15,.92)', backdropFilter: 'blur(12px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }}>
+      <div style={{
+        background: 'rgba(14,10,31,.98)', border: '1px solid var(--border)',
+        borderRadius: 20, padding: '48px 40px', maxWidth: 480, width: '100%',
+        textAlign: 'center', boxShadow: '0 0 80px rgba(177,59,255,.12), 0 40px 80px rgba(0,0,0,.6)',
+      }}>
+        {/* Logo */}
+        <div style={{
+          width: 48, height: 48, borderRadius: 13,
+          background: 'linear-gradient(135deg, var(--purple), var(--pink))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '.85rem', fontWeight: 800, color: '#fff',
+          margin: '0 auto 24px',
+        }}>GS</div>
+
+        <h2 style={{
+          fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.04em',
+          color: 'var(--text)', marginBottom: 12, lineHeight: 1.2,
+        }}>{headline}</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '.9rem', lineHeight: 1.65, marginBottom: 32 }}>
+          {sub}
+        </p>
+
+        {/* Pricing reminder */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 32,
+        }}>
+          {[
+            { label: 'Monthly',   price: '$49',  sub: '/mo' },
+            { label: 'Quarterly', price: '$125', sub: '/qtr' },
+            { label: 'Yearly',    price: '$490', sub: '/yr', badge: 'Best value' },
+          ].map(p => (
+            <div key={p.label} style={{
+              background: 'rgba(255,255,255,.04)', border: '1px solid var(--border)',
+              borderRadius: 10, padding: '12px 8px', position: 'relative',
+            }}>
+              {p.badge && (
+                <div style={{
+                  position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+                  background: 'linear-gradient(135deg, var(--purple), var(--pink))',
+                  color: '#fff', fontSize: '.55rem', fontWeight: 700,
+                  padding: '2px 8px', borderRadius: 100, letterSpacing: '.08em',
+                  textTransform: 'uppercase', whiteSpace: 'nowrap',
+                }}>{p.badge}</div>
+              )}
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.04em' }}>{p.price}</div>
+              <div style={{ fontSize: '.65rem', color: 'var(--dim)' }}>{p.sub}</div>
+              <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginTop: 2 }}>{p.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <a
+          href={`mailto:sales@brookhaven-hathaway.com?subject=${subject}&body=${body}`}
+          style={{
+            display: 'block', textDecoration: 'none',
+            background: 'linear-gradient(135deg, rgba(177,59,255,.3), rgba(255,45,146,.2))',
+            border: '1px solid rgba(177,59,255,.5)',
+            color: '#e2d9f3', borderRadius: 12, padding: '14px 32px',
+            fontSize: '.95rem', fontWeight: 700, letterSpacing: '.02em',
+            marginBottom: 12,
+          }}
+        >
+          Email us to subscribe →
+        </a>
+        <p style={{ fontSize: '.75rem', color: 'var(--dim)', margin: 0 }}>
+          sales@brookhaven-hathaway.com · reply within 1 business day
+        </p>
+      </div>
     </div>
   )
 }

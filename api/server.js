@@ -14,6 +14,19 @@ async function runSchema() {
   try {
     await client.query('BEGIN');
     await client.query(`
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        user_id              TEXT        PRIMARY KEY,
+        stripe_customer_id   TEXT,
+        stripe_subscription_id TEXT,
+        plan                 TEXT,
+        status               TEXT        NOT NULL DEFAULT 'trialing',
+        trial_ends_at        TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '7 days',
+        current_period_end   TIMESTAMPTZ,
+        created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS bids (
         id          SERIAL PRIMARY KEY,
         sam_id      TEXT UNIQUE NOT NULL,
@@ -264,6 +277,60 @@ app.get('/categories', requireAuth, async (_req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+/* ── GET /me/subscription ────────────────────────────────── */
+app.get('/me/subscription', requireAuth, async (req, res) => {
+  const userId = req.user?.sub ?? 'dev';
+  try {
+    const { rows } = await pool.query(
+      `SELECT status, plan, trial_ends_at, current_period_end
+       FROM subscriptions WHERE user_id = $1`,
+      [userId]
+    );
+    if (!rows.length) {
+      return res.json({ status: 'none' });
+    }
+    const sub = rows[0];
+    // Expire trialing rows whose trial has passed
+    if (sub.status === 'trialing' && sub.trial_ends_at && new Date(sub.trial_ends_at) < new Date()) {
+      return res.json({ status: 'expired', plan: sub.plan });
+    }
+    return res.json({
+      status: sub.status,
+      plan:   sub.plan,
+      trial_ends_at:      sub.trial_ends_at,
+      current_period_end: sub.current_period_end,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+/* ── POST /admin/provision ───────────────────────────────── */
+app.post('/admin/provision', async (req, res) => {
+  const secret = req.headers['x-admin-secret'];
+  if (secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const { user_id, plan = 'monthly', status = 'active', days = 30 } = req.body;
+  if (!user_id) return res.status(400).json({ error: 'user_id required' });
+  try {
+    await pool.query(
+      `INSERT INTO subscriptions (user_id, plan, status, current_period_end)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '1 day' * $4)
+       ON CONFLICT (user_id) DO UPDATE
+         SET plan = EXCLUDED.plan,
+             status = EXCLUDED.status,
+             current_period_end = EXCLUDED.current_period_end,
+             updated_at = NOW()`,
+      [user_id, plan, status, days]
+    );
+    res.json({ ok: true, user_id, plan, status, days });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Database error' });
   }
 });
